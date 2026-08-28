@@ -41,11 +41,10 @@ results each half of the system is extracted from.
 
 ### 2.1 Modality extraction — why many cheap indexes instead of one smart model
 
-**Key diagram 1 — search, not perception, is the bottleneck** (from the "Long Video
-Haystack" formulation of *T\*/LV-Haystack*,
-[arXiv 2504.02259](https://arxiv.org/abs/2504.02259) Fig. 1, and the
-iterative-selection results of *VideoAgent*,
-[arXiv 2403.10517](https://arxiv.org/abs/2403.10517)):
+**Key diagram 1 — search, not perception, is the bottleneck.** Our diagram; it
+summarizes the "Long Video Haystack" findings of *T\*/LV-Haystack*
+([arXiv 2504.02259](https://arxiv.org/abs/2504.02259)) and the iterative-selection
+results of *VideoAgent* ([arXiv 2403.10517](https://arxiv.org/abs/2403.10517)):
 
 ```mermaid
 flowchart LR
@@ -62,11 +61,11 @@ Consequence: spend ingest effort producing *searchable indexes*, not understandi
 iteratively, hand only confirmed frames to the answering VLM. Figure from T\*
 ([arXiv 2504.02259](https://arxiv.org/abs/2504.02259), Ye et al., CC BY-SA 4.0).*
 
-**Key diagram 2 — every extractor emits one canonical, self-timestamped record**
-(pattern from *Goldfish*'s fixed-time clip windows,
-[arXiv 2407.12679](https://arxiv.org/abs/2407.12679), *Video-RAG*'s visually-aligned
-auxiliary texts, [arXiv 2411.13093](https://arxiv.org/abs/2411.13093) Fig. 2, and
-*LLoVi*'s captions-as-index, [arXiv 2312.17235](https://arxiv.org/abs/2312.17235)):
+**Key diagram 2 — every extractor emits one canonical, self-timestamped record.** Our
+diagram; the pattern follows *Goldfish*'s fixed-time clip windows
+([arXiv 2407.12679](https://arxiv.org/abs/2407.12679)), *Video-RAG*'s visually-aligned
+auxiliary texts ([arXiv 2411.13093](https://arxiv.org/abs/2411.13093)), and *LLoVi*'s
+captions-as-index ([arXiv 2312.17235](https://arxiv.org/abs/2312.17235)):
 
 ```mermaid
 flowchart TD
@@ -121,12 +120,11 @@ not by forcing a fixed segment grid at ingest. Why *these* extractors:
 
 ### 2.2 Semantic querying — propose, fuse, merge, verify
 
-**Key diagram 3 — the precision funnel** (retrieve-then-verify as in *T\**'s
-search-then-inspect and *Deep Video Discovery*'s propose-inspect loop,
-[arXiv 2505.18079](https://arxiv.org/abs/2505.18079); fusion from
-*Cormack et al., SIGIR 2009* — RRF;
-reranking evidence from the BEIR reranker benchmarks and *NevIR*,
-[arXiv 2305.07614](https://arxiv.org/abs/2305.07614)):
+**Key diagram 3 — the precision funnel.** Our diagram; the stages come from
+retrieve-then-verify as in *T\**'s search-then-inspect and *Deep Video Discovery*'s
+propose-inspect loop ([arXiv 2505.18079](https://arxiv.org/abs/2505.18079)), fusion
+from *Cormack et al., SIGIR 2009* (RRF), and reranking evidence from the BEIR reranker
+benchmarks and *NevIR* ([arXiv 2305.07614](https://arxiv.org/abs/2305.07614)):
 
 ```mermaid
 flowchart LR
@@ -153,10 +151,11 @@ queries at or below random (NevIR; *NegBench*,
 *shirt*" vs red *car*) is left to the verifier because CLIP-family models are near
 bag-of-words on relations (*ARO*, [arXiv 2210.01936](https://arxiv.org/abs/2210.01936)).
 
-**Key diagram 4 — verification you can trust, including at night** (sycophancy: *VISE*,
-[arXiv 2506.07180](https://arxiv.org/abs/2506.07180); low-light failure mode: *DarkQA*,
-[arXiv 2512.24985](https://arxiv.org/abs/2512.24985); calibrated abstention:
-*Conformal Abstention*, [arXiv 2405.01563](https://arxiv.org/abs/2405.01563)):
+**Key diagram 4 — verification you can trust, including at night.** Our diagram; each
+safeguard traces to a measured failure mode — sycophancy: *VISE*
+([arXiv 2506.07180](https://arxiv.org/abs/2506.07180)); low-light: *DarkQA*
+([arXiv 2512.24985](https://arxiv.org/abs/2512.24985)); calibrated abstention:
+*Conformal Abstention* ([arXiv 2405.01563](https://arxiv.org/abs/2405.01563)):
 
 ```mermaid
 flowchart TD

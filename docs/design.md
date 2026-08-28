@@ -2,14 +2,14 @@
 
 ## The core insight
 
-Hour-scale video search fails at *finding* moments, not *recognizing* them. On hour-long
-video benchmarks, ~85% of temporal-grounding failures are search failures (the predicted
-interval is nowhere near the event), not perception failures — and a simple frame-level
-retrieval baseline beats every open Video-LLM at hour scale
-([ExtremeWhenBench, arXiv 2606.12300](https://arxiv.org/abs/2606.12300)). Better search
-also beats more frames: under a fixed 32-frame budget, a temporal search stage lifts
-long-video QA accuracy more than model upgrades do
-([T*, arXiv 2504.02259](https://arxiv.org/abs/2504.02259)).
+Hour-scale video search fails at *finding* moments, not *recognizing* them. The task is
+finding 1–5 needle frames among tens of thousands, and that is where systems break:
+existing temporal-search methods reach just 2.1% temporal F1 on long video
+([T*/LV-Haystack, arXiv 2504.02259](https://arxiv.org/abs/2504.02259)), while agentic
+selection matches 256-frame dense baselines while inspecting ~8 frames
+([VideoAgent, arXiv 2403.10517](https://arxiv.org/abs/2403.10517)). Better search also
+beats more frames: under a fixed 32-frame budget, a temporal search stage lifts
+long-video QA accuracy more than model upgrades do (T*).
 
 So the system splits recall from precision:
 

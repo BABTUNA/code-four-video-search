@@ -41,16 +41,18 @@ results each half of the system is extracted from.
 
 ### 2.1 Modality extraction — why many cheap indexes instead of one smart model
 
-**Key diagram 1 — search, not perception, is the bottleneck** (from the failure
-taxonomy in *ExtremeWhenBench*, [arXiv 2606.12300](https://arxiv.org/abs/2606.12300),
-Fig. 1/§4, and *T\*/LV-Haystack*, [arXiv 2504.02259](https://arxiv.org/abs/2504.02259)):
+**Key diagram 1 — search, not perception, is the bottleneck** (from the "Long Video
+Haystack" formulation of *T\*/LV-Haystack*,
+[arXiv 2504.02259](https://arxiv.org/abs/2504.02259) Fig. 1, and the
+iterative-selection results of *VideoAgent*,
+[arXiv 2403.10517](https://arxiv.org/abs/2403.10517)):
 
 ```mermaid
 flowchart LR
     Q[query over 1-hour video] --> M["monolithic VLM<br/>watches everything"]
     Q --> S["search stage proposes,<br/>VLM inspects finalists"]
-    M --> F["~85% of failures:<br/>wrong interval entirely<br/>(2.1% temporal F1 for<br/>visual-only search)"]
-    S --> W["6.7x better grounding;<br/>~8 frames inspected<br/>matches 256-frame baselines"]
+    M --> F["context limits force sparse sampling;<br/>needle moments fall between frames<br/>(existing temporal search:<br/>2.1% temporal F1)"]
+    S --> W["search lifts accuracy more than<br/>model upgrades at a fixed frame budget;<br/>~8 inspected frames match<br/>256-frame dense baselines"]
 ```
 
 Consequence: spend ingest effort producing *searchable indexes*, not understanding.
@@ -100,15 +102,18 @@ not by forcing a fixed segment grid at ingest. Why *these* extractors:
 - **Captions with our vocabulary**: one flash-tier VLM call per 5-minute chunk,
   prompted for the policing ontology, with the transcript in-prompt as a temporal
   anchor — chunk-local times are offset to absolute by arithmetic, because VLMs
-  mislocalize timestamps beyond short windows (ExtremeWhenBench).
+  mislocalize timestamps beyond short windows (the needle-frame findings of
+  LV-Haystack).
 - **Domain extras**: speaker roles (officer/civilian), burned-in-clock OCR (absolute
   wall time), and a camera-motion series for pursuits — motion-only activity
   recognition on real police BWV: [arXiv 1904.09062](https://arxiv.org/abs/1904.09062).
 
 ### 2.2 Semantic querying — propose, fuse, merge, verify
 
-**Key diagram 3 — the precision funnel** (retrieve-then-verify from ExtremeWhenBench's
-retrieve-then-ground decomposition; fusion from *Cormack et al., SIGIR 2009* — RRF;
+**Key diagram 3 — the precision funnel** (retrieve-then-verify as in *T\**'s
+search-then-inspect and *Deep Video Discovery*'s propose-inspect loop,
+[arXiv 2505.18079](https://arxiv.org/abs/2505.18079); fusion from
+*Cormack et al., SIGIR 2009* — RRF;
 reranking evidence from the BEIR reranker benchmarks and *NevIR*,
 [arXiv 2305.07614](https://arxiv.org/abs/2305.07614)):
 
@@ -157,7 +162,7 @@ Things we evaluated and decided against, with the evidence that decided it.
 
 | Idea | Verdict | Why |
 |---|---|---|
-| Feed the whole hour to a long-context VLM and ask "when?" | Hype (for this task) | ~85% of hour-scale failures are search failures; frame-retrieval baselines beat every open Video-LLM at temporal grounding ([2606.12300](https://arxiv.org/abs/2606.12300)) |
+| Feed the whole hour to a long-context VLM and ask "when?" | Hype (for this task) | Existing temporal search reaches 2.1% temporal F1 on long video (LV-Haystack, [2504.02259](https://arxiv.org/abs/2504.02259)); question-conditioned search inspecting ~8–32 frames matches or beats 256-frame dense sampling (VideoAgent [2403.10517](https://arxiv.org/abs/2403.10517), T\*) |
 | Supervised moment-retrieval models (Moment-DETR / CG-DETR / UVCOM) | Wrong tool | Effectively supervised-only; the sole zero-shot attempt (UniVTG, [2307.16715](https://arxiv.org/abs/2307.16715)) collapses to ~11 avg mAP off-distribution — no bodycam training data exists to fix that |
 | Video-native foundation embeddings (VideoPrism, InternVideo2) as the retrieval backbone | Premature | Win on trimmed-clip benchmarks; no published win on untrimmed continuous video, where frame-level CLIP is the surviving baseline (MAD, [2112.00431](https://arxiv.org/abs/2112.00431)). Kept as a per-chunk upgrade path for motion-defined queries |
 | Fixed segment grid at ingest (chunk everything into 30s bins) | Rejected after building it | Bins destroy span precision (a 2-second quote becomes a 30-second answer) and force one granularity on all modalities; per-modality spans + query-time merge preserves both |

@@ -7,11 +7,10 @@ arXiv IDs verified. This review drives the decisions in [design.md](design.md).
 
 ## 1. The core problem is search, not perception
 
-- **ExtremeWhenBench** ([2606.12300](https://arxiv.org/abs/2606.12300)): 2,273 queries
-  over videos averaging 76 min. Every open Video-LLM collapses at hour scale while a
-  frame-level retrieval baseline beats them; a manual failure taxonomy attributes **85%
-  of failures to search** (predicted interval nowhere near the event) vs 11% to boundary
-  localization. Their retrieve-then-ground hybrid recovers 6.7x.
+- **LongVideoBench** ([2407.15754](https://arxiv.org/abs/2407.15754)): even frontier
+  models struggle at hour scale, and accuracy improves mainly with more frames
+  processed — evidence that the frame budget, not reasoning, is the binding
+  constraint on long video.
 - **T\* / LV-Haystack** ([2504.02259](https://arxiv.org/abs/2504.02259)): frames the task
   as finding 1–5 needle frames among tens of thousands; existing temporal-search methods
   achieve **2.1% temporal F1** on the LongVideoBench subset. Under a fixed 32-frame

@@ -91,8 +91,10 @@ def run_search(query: str, store: Store, config: dict, verify: bool = True,
     if verify and candidates:
         from c4search.search.verify import Verifier
         verifier = Verifier(config.get("verifier", {}))
-        elements = [sq["text"] for sq in positives if sq["role"] == "required"] or [query]
-        elements += [f"NOT: {sq['text']}" for sq in negatives]
+        # Verify the user's actual query, not the planner's retrieval
+        # rephrasings - "orders the driver to step out" is satisfied by the
+        # spoken order even if the step-out never visibly happens.
+        elements = [query] + [f"NOT: {sq['text']}" for sq in negatives]
         for candidate in candidates:
             verdict = verifier.verify(
                 candidate, elements, store, media_info(store, candidate.video_id))

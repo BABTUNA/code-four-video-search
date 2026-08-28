@@ -36,6 +36,7 @@ def chat_json(
         "response_format": {"type": "json_schema", "json_schema": {
             "name": schema_name, "strict": True, "schema": schema}},
         "usage": {"include": True},
+        "temperature": 0,  # planning and verification should be repeatable
     }
     headers = {"Authorization": f"Bearer {api_key()}"}
 

@@ -44,7 +44,7 @@ uv run c4 search "an officer reads someone their Miranda rights"
   inline (show queries.yaml comments - cuffs being REMOVED, the stay-in-the-car
   exchange).
 - The build-up ladder table: "each row is one config file" - captions lift
-  hit@5 from 0.61 to 0.78 for $0.90 one-time; frame/audio retrieval is neutral *on this
+  hit@5 from 0.67 to 0.89 for $0.90 one-time; frame/audio retrieval is neutral *on this
   query set* (say the bias caveat out loud); verification buys 6/6 abstention
   for ~14s and a cent per query.
 - The best moment: "the eval caught my labels being wrong - the system outranked

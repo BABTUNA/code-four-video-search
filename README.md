@@ -62,33 +62,39 @@ The main README includes only the research that directly changed the design. See
 
 ### 3.1 Modality extraction
 
-Long-video models struggle to locate brief events. T* reports 2.1% temporal F1 on
-long-video search ([arXiv 2504.02259](https://arxiv.org/abs/2504.02259)), while
-VideoAgent matches dense 256-frame baselines by inspecting about eight frames
-([arXiv 2403.10517](https://arxiv.org/abs/2403.10517)). This supports building
-searchable indexes instead of sending entire videos to one model.
+Long-video models struggle to locate brief events. On the LVBench subset of
+LV-Haystack, existing keyframe-selection methods reach only 2.1% temporal F1. T*
+responds with question-guided temporal search
+([arXiv 2504.02259](https://arxiv.org/abs/2504.02259)). VideoAgent uses 8.4 frames
+on average and outperforms the 256-frame LongViViT baseline on EgoSchema
+([arXiv 2403.10517](https://arxiv.org/abs/2403.10517)). Together, these results
+support selective search instead of sending every frame to one model.
 
 ![Video-RAG auxiliary text extraction](docs/figures/videorag-framework.png)
 *Video-RAG converts ASR, OCR, and object detections into searchable text. This system
 extends the same pattern to additional bodycam modalities
 ([arXiv 2411.13093](https://arxiv.org/abs/2411.13093)).*
 
-Speech is often the strongest bodycam signal, but Whisper can hallucinate phrases.
-The transcriber therefore uses word timestamps, decode-failure thresholds, and a
-blocklist for recurring stock outputs. WhisperX informed the timestamping and
-speech-filtering design, although this implementation uses MLX Whisper rather than
-the complete WhisperX pipeline.
+Speech is a major bodycam signal, but long-form Whisper can drift, repeat, and
+hallucinate phrases. The transcriber therefore uses word timestamps, decode-failure
+thresholds, and a blocklist for recurring stock outputs. WhisperX informed the
+timestamping and filtering design, but this implementation uses MLX Whisper rather
+than the complete WhisperX pipeline.
 
 ![WhisperX pipeline](docs/figures/whisperx-pipeline.png)
-*WhisperX combines speech detection and alignment for more reliable word timestamps
+*Reference architecture only. WhisperX combines VAD, cut-and-merge, and forced
+phoneme alignment. This project does not implement that complete pipeline
 ([arXiv 2303.00747](https://arxiv.org/abs/2303.00747)).*
 
 The remaining extractor choices follow four practical observations:
 
-* **Frames:** frame-level embeddings remain effective for long, untrimmed video
+* **Frames:** MAD uses frame-level CLIP features, mean-pooled over candidate
+  proposals, as a competitive long-form grounding baseline
   ([MAD](https://arxiv.org/abs/2112.00431)).
-* **Audio:** CLAP and PANNs capture shouting, sirens, and other signals missing from
-  transcripts ([CLAP](https://arxiv.org/abs/2211.06687),
+* **Audio:** CLAP supports text-to-audio retrieval, while PANNs supports audio tagging
+  and sound-event detection. These results motivate separate audio indexes, but do
+  not establish accuracy on police footage
+  ([CLAP](https://arxiv.org/abs/2211.06687),
   [PANNs](https://arxiv.org/abs/1912.10211)).
 * **Captions:** VLM captions make visible actions searchable when nobody names them
   ([LLoVi](https://arxiv.org/abs/2312.17235),
@@ -102,7 +108,9 @@ The query pipeline follows a search-then-inspect approach. Retrieval proposes a 
 set of moments, then a VLM judges only those moments.
 
 ![T* iterative temporal search](docs/figures/tstar-framework.png)
-*T* searches the timeline and passes selected frames to the answering model
+*T* grounds the question, searches through temporal and spatial upsampling, and
+passes selected frames to the answering model. We borrow the separation between
+search and answering, not the T* search algorithm itself
 ([arXiv 2504.02259](https://arxiv.org/abs/2504.02259)).*
 
 ![Goldfish retrieval framework](docs/figures/goldfish-framework.png)
@@ -123,9 +131,13 @@ Three findings shape the precision stages:
   a ranked evidence-bearing shortlist rather than claiming one perfect answer
   ([SnAG](https://arxiv.org/abs/2404.02257)).
 
-The verifier describes the evidence before judging it and runs at temperature zero.
-It returns discrete tiers instead of trusting the model's verbal confidence.
-Conformal calibration is a future improvement that requires a larger labeled set.
+Video-LLMs can follow misleading prompts even when they conflict with visual evidence
+([VISE](https://arxiv.org/abs/2506.07180)). The verifier therefore describes the
+evidence before judging it and runs at temperature zero for repeatability. It returns
+discrete tiers because VLM verbalized confidence is often miscalibrated
+([CSP](https://arxiv.org/abs/2504.14848)). Conformal abstention is a future improvement
+that requires a separate calibration set
+([arXiv 2405.01563](https://arxiv.org/abs/2405.01563)).
 
 ## 4. Architecture
 

@@ -235,6 +235,11 @@ Each row is a swappable YAML configuration.
 | 5. Add VLM verification | 0.50 | 0.67 | 5/6 | 4 | 14.7 | $0.014 |
 | **Recommended: captions retrieval + verification** | **0.67** | 0.83 | **6/6** | 2 | 13.8 | $0.014 |
 
+Stratified by difficulty on the recommended configuration: Hit@1 is 0.67 on both the
+direct (speech-answerable) and cross-modal (hard) strata - precision holds on the hard
+stratum, the rubric's stated priority - and all six no-answer traps, the strictest
+precision test, are refused.
+
 The results support three conclusions:
 
 1. **Captions provide the largest retrieval gain.** They find visible actions that

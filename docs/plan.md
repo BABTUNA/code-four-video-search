@@ -10,10 +10,10 @@ through `Doc` records and the store.
 
 ```
 src/c4search/
-  config.py        # YAML config load; the config is the wiring diagram
+  config.py        # YAML config load
   models.py        # Doc, Hit, Segment, Verdict — the only shared types
   store.py         # SQLite doc store + numpy vector arrays
-  cache.py         # content-hash stage caching (~40 lines)
+  cache.py         # stage caching keyed by source identity + config
   registry.py      # name -> implementation lookup per seam
   media.py         # ffmpeg: proxy, audio, frames, loudness
   ingest.py        # runs registered extractors over videos

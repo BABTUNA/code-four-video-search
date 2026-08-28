@@ -84,6 +84,15 @@ def search(
             typer.echo(f"    {doc.modality:12s} [{hms(doc.t_start)}] {label[:76]}")
     if shown == 0:
         typer.echo("no confident match")
+    telemetry = outcome["telemetry"]
+    typer.echo(
+        f"\n[{telemetry['total_s']}s"
+        f" | plan {telemetry['stage_s']['plan']}s"
+        f" · retrieve+rerank {telemetry['stage_s']['retrieve_rerank']}s"
+        f" · merge {telemetry['stage_s']['merge']}s"
+        f" · verify {telemetry['stage_s']['verify']}s"
+        f" | API ${telemetry['cost_usd']}]"
+    )
 
 
 @app.command()
@@ -104,7 +113,8 @@ def eval(
     store = Store(Path(settings.get("data_dir", "data")) / "index")
     query_set = yaml.safe_load(queries.read_text())["queries"]
 
-    results = []
+    results, per_query = [], []
+    total_cost = total_s = 0.0
     for entry in query_set:
         outcome = run_search(entry["query"], store, settings,
                              verify=not no_verify, top=5)
@@ -116,7 +126,29 @@ def eval(
         ]
         result = score_query(entry, predictions)
         results.append(result)
+        telemetry = outcome["telemetry"]
+        total_cost += telemetry["cost_usd"]
+        total_s += telemetry["total_s"]
+        per_query.append({"query": entry["query"], "kind": result.kind,
+                          "hit_rank": result.hit_rank,
+                          "abstained": result.abstained, **telemetry})
         marker = "ABSTAIN" if result.abstained else f"hit@{result.hit_rank or '-'}"
-        typer.echo(f"  [{result.kind:9s}] {marker:8s} {entry['query'][:60]}")
+        typer.echo(f"  [{result.kind:11s}] {marker:8s} "
+                   f"{telemetry['total_s']:6.1f}s  ${telemetry['cost_usd']:.4f}  "
+                   f"{entry['query'][:52]}")
 
-    typer.echo(json.dumps(summarize(results), indent=2))
+    summary = summarize(results)
+    summary["total_s"] = round(total_s, 1)
+    summary["total_cost_usd"] = round(total_cost, 4)
+    summary["s_per_query"] = round(total_s / max(1, len(results)), 1)
+    summary["cost_per_query_usd"] = round(total_cost / max(1, len(results)), 4)
+    typer.echo(json.dumps(summary, indent=2))
+
+    from datetime import datetime
+    stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    results_file = Path("eval") / f"results-{stamp}.json"
+    results_file.write_text(json.dumps({
+        "config": str(config), "no_verify": no_verify,
+        "summary": summary, "per_query": per_query,
+    }, indent=2))
+    typer.echo(f"written: {results_file}")

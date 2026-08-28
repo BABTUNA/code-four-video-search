@@ -1,21 +1,21 @@
-# Starter labeled set for the dev clip (first 2 minutes of video_1).
-# Spans were human-verified against the footage; this grows with the corpus
-# via eval/expand_queries.py + the audit sheet before any scaled eval.
+# Labeled query set. Truth spans are proposed by eval/label_bootstrap.py and
+# human-audited before use. Starter entries below predate the scaled corpus
+# and are replaced by the audit pass.
 queries:
   - query: officer orders the driver to step out of the vehicle
-    type: easy
+    type: direct
     truth:
       - video: clip
         start: 73
         end: 106
   - query: officer asks the driver to roll down the window
-    type: easy
+    type: direct
     truth:
       - video: clip
         start: 50
         end: 56
   - query: a vehicle stopped in a drive-thru lane at night
-    type: hard
+    type: cross_modal
     truth:
       - video: clip
         start: 22

@@ -19,11 +19,11 @@ def test_hit_requires_same_video():
 
 def test_summarize_counts_abstention_both_ways():
     results = [
-        score_query({"query": "a", "type": "easy",
+        score_query({"query": "a", "type": "direct",
                      "truth": [{"video": "v", "start": 0, "end": 10}]},
                     [{"video": "v", "t_start": 2, "t_end": 8}]),
         score_query({"query": "b", "type": "no_answer", "truth": []}, []),
-        score_query({"query": "c", "type": "hard",
+        score_query({"query": "c", "type": "cross_modal",
                      "truth": [{"video": "v", "start": 50, "end": 60}]}, []),
     ]
     summary = summarize(results)

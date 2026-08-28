@@ -1,0 +1,29 @@
+# Query specs for the label bootstrapper. Each entry names a query, its
+# stratum, the regex patterns that propose candidate truth spans, and which
+# Doc modalities to scan. Edit this file, then run:
+#   uv run python eval/label_bootstrap.py
+specs:
+  - query: officer reads someone their rights
+    type: direct
+    patterns: ["right to remain silent", "attorney", "appointed"]
+    scan: [transcript]
+  - query: officer orders the driver to step out of the vehicle
+    type: direct
+    patterns: ["step (out|outside)", "out of the (car|vehicle)"]
+    scan: [transcript]
+  - query: a person is being handcuffed
+    type: cross_modal
+    patterns: ["handcuff", "hands behind your back", "cuff"]
+    scan: [transcript, caption]
+  - query: a vehicle stopped by police at night
+    type: cross_modal
+    patterns: ["traffic stop", "pulled over", "pulls over"]
+    scan: [caption]
+  - query: someone raises their voice
+    type: cross_modal
+    patterns: ["raised voice", "shout", "yell", "scream"]
+    scan: [caption, vocal_arousal, audio_window]
+  - query: a field sobriety test is conducted
+    type: cross_modal
+    patterns: ["sobriety", "one leg", "walk and turn", "follow my (pen|finger)"]
+    scan: [transcript, caption]

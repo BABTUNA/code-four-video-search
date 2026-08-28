@@ -11,7 +11,7 @@ from dataclasses import dataclass
 @dataclass
 class QueryResult:
     query: str
-    kind: str            # "easy" | "hard" | "no_answer"
+    kind: str            # "direct" | "cross_modal" | "no_answer"
     hit_rank: int | None  # rank of first prediction hitting truth, else None
     abstained: bool
 
@@ -44,7 +44,7 @@ def score_query(query: dict, predictions: list[dict]) -> QueryResult:
         if is_hit(prediction, truths):
             hit_rank = rank
             break
-    return QueryResult(query["query"], query.get("type", "easy"), hit_rank, abstained)
+    return QueryResult(query["query"], query.get("type", "direct"), hit_rank, abstained)
 
 
 def summarize(results: list[QueryResult]) -> dict:
@@ -61,7 +61,7 @@ def summarize(results: list[QueryResult]) -> dict:
         "false_abstain": sum(r.abstained for r in answerable),
         "abstention_acc": rate(no_answer, lambda r: r.abstained),
     }
-    for kind in ("easy", "hard"):
+    for kind in ("direct", "cross_modal"):
         rows = [r for r in answerable if r.kind == kind]
         summary[f"hit@1_{kind}"] = rate(rows, lambda r: r.hit_rank == 1)
     return summary

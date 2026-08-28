@@ -1,123 +1,97 @@
-# Pipeline: extraction and querying, end to end
+# Pipeline: extraction and querying, as implemented
 
-The operational blueprint. [design.md](design.md) carries the rationale,
-[research.md](research.md) the literature. Every stage runs locally on Apple Silicon
-except chunk captioning, which uses a flash-tier VLM via OpenRouter (~$0.15–0.35 per
-video-hour) — a deliberate trade: a local 3B captioner would make ingest ~3x slower to
-save single-digit dollars, and the captioner is a one-line config swap either way.
+The operational spec, kept in sync with the code. [design.md](design.md) carries the
+rationale, [research.md](research.md) the literature.
 
 ---
 
-## Section 1 — Extraction (once per video, local, cached)
+## Section 1 — Extraction (once per video, cached)
 
-One pass per stage over each video; every stage emits the same canonical record —
-`Doc {video_id, t_start, t_end, modality, text, extra}` on the video's absolute
-timeline — into SQLite (+ numpy arrays for vectors). Stages are keyed by content hash
-of (input, config), so swapping one re-runs only that one.
+`c4 ingest` decodes each source once (480p proxy via VideoToolbox, 16 kHz mono wav,
+0.5 fps frames, an ebur128 loudness series), then runs the configured extractors.
+Every extractor emits the canonical record —
+`Doc {video_id, t_start, t_end, modality, text, extra}`, float seconds on the video's
+absolute timeline — into SQLite, with vectors as numpy arrays alongside. Stages are
+cached by (source identity, config subtree); a rerun re-executes only what changed.
 
-```
-video.mp4
-  └─ ffmpeg (VideoToolbox): 480p proxy, 16kHz mono wav, frames @0.5fps, loudness (ebur128)
-       ├─ AUDIO PIPE (CPU/ANE)                    ├─ VISION PIPE (GPU/MPS)
-       │  transcriber   mlx-whisper turbo         │  frame embedder  SigLIP 2 @0.5fps
-       │  diarizer      senko (CoreML)            │  detector        YOLO-World @0.5fps
-       │  audio events  CLAP + PANNs CNN14        │  scene attrs     SigLIP zero-shot + luma
-       │  vocal arousal wav2vec2 (audeering)      │  clock OCR       ocrmac on overlay crop
-       ├─ motion        optical-flow magnitude series (CPU)
-       └─ captioner     flash-tier VLM via OpenRouter, 5-min 480p chunks (the one API stage)
-                                ↓
-                Doc store (SQLite) + vector arrays, one shared timeline
-```
+| Stage | Model / tool | Emits |
+|---|---|---|
+| transcribe | mlx-whisper large-v3-turbo; decode-failure thresholds (compression > 2.4, logprob < −1.0, no-speech > 0.6) + stock-output blocklist | word-timestamped transcript Docs |
+| diarize | senko (CoreML); mic-proximity officer heuristic | speaker_turn Docs; transcript Docs inherit speaker + role by overlap |
+| frames | SigLIP 2 (MPS), batched | frame Docs + vectors; scene Docs (day/night/indoors, zero-shot + luma floor) merged into spans |
+| detect | YOLO-World, fixed vocabulary | object Docs per frame with detections |
+| audio_events | CLAP on 10 s windows | audio_window Docs + vectors; labels above threshold in text |
+| audio_tags | PANNs CNN14, AudioSet alarm subset | audio_tag Docs (gunshot/siren/screaming/…) |
+| arousal | wav2vec2 dimensional model over speech-loud windows | vocal_arousal Docs for elevated runs |
+| motion | frame-difference energy series (no model) | motion Docs for sustained high-motion spans |
+| clock_ocr | Apple Vision OCR on sampled frames; regex + monotonicity filter | wall_clock anchor Docs |
+| caption | flash-tier VLM per 5-min 1fps 480p chunk (the one paid stage); transcript in-prompt as temporal anchor; per-chunk response cache so a flaky chunk never re-bills the rest | caption Docs with policing-ontology tags and per-chunk cost |
 
-| Stage | Model / tool | What it emits | Why it earns its place |
-|---|---|---|---|
-| Transcriber | `mlx-whisper` large-v3-turbo (~10x realtime) | word-timestamped utterances | dominant signal; hardened with the Whisper paper's own thresholds (compression > 2.4, logprob < −1.0, no-speech > 0.6), VAD gating, and a stock-hallucination blocklist — hallucinated text matching a query is a precision disaster |
-| Diarizer | `senko` (CoreML; ~8s per audio-hour), pyannote fallback | speaker turns | "who said it" — officer vs civilian, mapped heuristically (mic proximity, speech share); powers queries like "civilian says X" |
-| Captioner | flash-tier VLM (OpenRouter), one call per 5-min 480p chunk at low media resolution, transcript in-prompt as temporal anchor | structured scene/event descriptions with chunk-local times we offset to absolute | the index whose vocabulary we control (policing ontology — "handcuffing" findable though never spoken); true video input captures temporal verbs a frame captioner misses; ~$0.15–0.35/video-hour, and swappable to a local VLM (Qwen2.5-VL via mlx-vlm) at ~3x ingest time if API-free ingest ever matters |
-| Frame embedder | SigLIP 2 @0.5fps (MPS) | image vectors | catches what captions omit; frame-level is the evidence-backed baseline for continuous footage |
-| Scene attributes | same SigLIP embeddings, zero-shot prompts + mean-luma check | day/night, indoor/outdoor tags | answers "at night" as a *filter*, nearly free — reuses existing vectors |
-| Audio events | CLAP (open-vocab) + PANNs CNN14 (fixed AudioSet head) | event spans: shouting, siren, gunshot, glass... | prosody is invisible to transcripts; PANNs' supervised head is more reliable than CLAP prompts on the high-stakes fixed vocabulary (gunshot/siren/scream), so both run |
-| Vocal arousal | audeering wav2vec2 (dimensional, trained on naturalistic audio) on speech windows | arousal time series | graded vocal escalation — categorical emotion is unreliable in the wild (~0.34 F1), arousal is the defensible signal |
-| Detector | YOLO-World @0.5fps (MPS), fixed vocab: person, vehicle, weapon, flashlight, handcuffs, dog... | object spans | structured object evidence; night/shaky false negatives expected — indexed, never trusted alone |
-| Clock OCR | `ocrmac` (Apple Vision) on the burned-in timestamp crop, regex + monotonicity filter | wall-clock anchors | absolute time ("what happened at 11:42 PM") and cross-video alignment, ~150ms/crop |
-| Motion | optical-flow magnitude per second (OpenCV, CPU) | high-motion tags | foot pursuits/struggles from camera motion — precedent in bodycam activity recognition (arXiv 1904.09062), no model needed |
-| Loudness | ffmpeg ebur128 | loudness envelope | free ranking prior for shouting/impacts |
+Ingest ends by embedding all text-bearing Docs for dense retrieval and writing a
+`media.json` per video (frame paths, fps, duration) that the verifier later reads.
 
-Budget: ~10–15 min of local compute per video-hour (whisper ~5 min, embeddings ~2,
-the rest small), with captioning running concurrently as async API calls; audio and
-vision pipes contend little. Indexing 12 hours is an afternoon, not overnight. API
-cost: ~$0.15–0.35 per video-hour — $2–5 for the whole corpus subset.
+Budget: ~15–20 min local compute per video-hour + $0.10–0.35 captioning. Captioning
+runs sequentially within a video; chunks are cached individually.
 
 ---
 
-## Section 2 — Querying (per query, local; API only as escalation)
+## Section 2 — Querying (per query)
 
 ```
-query ──> Planner (JSON plan) ──> per-sub-query retrieval ──> RRF fusion (k=60)
-             │                        BM25 + dense + frames
-             │                              ↓
-             │                   Cross-encoder rerank (bge-reranker-v2-m3, top→10)
-             │                              ↓
-             │                   Temporal aggregation → candidate segments (top 5–10)
-             │                              ↓
-             └──────────────────> Verifier (local Qwen2.5-VL-7B; API on "unclear")
-                                            ↓
-                        confirmed / unverified-candidate / no confident match
+query -> plan -> per-sub-query retrieval -> RRF -> cross-encoder -> temporal merge
+      -> scene/anchor filters -> VLM verification -> evidence tiers
 ```
 
-**1. Planner** — one LLM call emits a JSON plan: ≤4 sub-queries, each tagged with
-target modalities, `required|supporting` role, and polarity. Rules with teeth:
-- *Negation never reaches a retriever.* Bi-encoders rank negated pairs at or below
-  random (NevIR); negations are extracted here and enforced at rerank/verify.
-- *Temporal constraints split in two*: attribute-like ("at night") become filters over
-  scene-attribute tags; event-anchored ("after the arrest") ground the anchor first,
-  then restrict the search interval (two-hop, capped at 2 iterations — 2 iterations
-  capture ~95% of the benefit of 5).
-- The raw query always rides along as a safety-net retrieval stream, so planning can
-  never do worse than not planning.
+**1. Plan.** One structured-output LLM call (temperature 0, disk-cached per query
+text so ablation rungs and reruns see identical plans) produces ≤4 sub-queries with
+target modalities, required/supporting roles, polarity, and up to 3 lexical variants;
+plus an optional scene filter and an optional ordering anchor. Explicit negations
+only. The unmodified query is always retained as a supporting stream. On API failure
+the fallback is the identity plan.
 
-**2. Retrieval** (recall-oriented, free) — per sub-query: BM25 (`bm25s`, plus ≤3
-planner-emitted lexical variants to bridge query↔spoken vocabulary, e.g. "breathalyzer"
-↔ "point two four nine") + dense text (bge) over transcript/caption/detection docs +
-SigLIP text-to-frame similarity. Top-100 per list, fused by RRF with k=60 (the flat
-optimum; not tuned). HyDE expansion only when dense scores come back weak.
+**2. Retrieve** (per positive sub-query; each arm has a config flag). BM25 over the
+query and its variants, dense text (bge) over the sub-query, SigLIP text-to-frame,
+CLAP text-to-audio — top-100 each, fused by RRF (k=60, rank-based). Fused hits are
+filtered to the sub-query's modalities (intersected with the config's global
+allow-list, which is how restricted baselines work). Negative sub-queries retrieve
+nothing; they become verifier checks.
 
-**3. Rerank** (precision, local) — `bge-reranker-v2-m3` cross-encoder on MPS scores the
-top ~100 fused hits against the sub-query text; keep ~10. Worth +10–30% relative
-nDCG@10 over first-stage retrieval, and cross-encoders are the only architecture above
-random on negation — this is where "NOT handcuffed" bites.
+**3. Rerank.** bge-reranker-v2-m3 cross-encoder scores the top (≤depth) text-bearing
+fused hits against the sub-query; the top ~20 survive with rank-based weights.
+Vector-only hits (frames, audio windows) keep their fused ranks. Models are loaded
+once per process, not per query.
 
-**4. Temporal aggregation** — project every hit onto the timeline (frame hits get ±
-half the sampling interval); Gaussian-smooth a fused per-second score track (σ≈3s);
-threshold-connect into proposals; merge gaps <5–10s; enforce minimum width ~2s and pad
-±2–3s; for AND-logic, keep only segments overlapped by *every* required sub-query
-(scored by min); NMS at IoU 0.5. Top 5–10 candidates proceed.
+**4. Temporal merge.** Hits paint their weight over the seconds they span (instants
+padded ±1 s) onto a per-second track per sub-query per video; tracks are Gaussian
+smoothed (σ≈3 s) and thresholded relative to their peak; above-threshold runs connect
+across ≤8 s gaps, take a minimum width and ±2 s padding. Spans of *required*
+sub-queries intersect (a zero-hit required stream is demoted, not allowed to veto);
+supporting-only plans union. Overlapping proposals merge; candidates rank by summed
+track mass. Scene filters then drop candidates without a matching scene doc, and an
+ordering anchor ("after the arrest") is grounded by an inner search and applied as an
+interval restriction.
 
-**5. Verifier** — local Qwen2.5-VL-7B (4-bit, mlx-vlm) sees 8–16 frames per candidate
-(peak-score frame guaranteed) at ~448–768px plus ±20s of transcript. Prompt is
-describe-first, then an element checklist, then structured JSON verdict — never told
-what the retriever expects (VLMs measurably capitulate to leading framing; VISE). Rules:
-- *Dark frames weaken "no".* In low light VLMs predominantly miss present objects
-  rather than hallucinate (DarkQA) — dark-segment negatives become "unclear", and
-  audio/transcript evidence carries more weight at night.
-- *Confidence is not a verbalized number* (VLMs are systematically overconfident);
-  it's sample agreement: temperature-0 single shot for clear verdicts, 3-sample vote
-  only near threshold, and the agreement rate feeds abstention.
-- *Escalation, not dependence*: candidates the local verifier marks "unclear" go to an
-  API VLM via OpenRouter — typically a small fraction of candidates, pennies.
+**5. Verify.** The verifier receives up to 8 frames sampled uniformly across the
+candidate plus ±20 s of transcript with speaker roles. The prompt: describe first,
+then judge each required element (the user's original query, plus any NOT-elements
+from negations), returning structured JSON at temperature 0. Tier mapping: yes →
+confirmed, no → rejected, unclear → candidate. On night footage a
+*visibility-limited* "no" (one whose element checklist contains "unclear") is
+softened to "unclear"; a transcript-grounded "no" stands. Tiers: API-first by
+default; with `use_local: true` a local Qwen2.5-VL verdict comes first and only
+unclear cases escalate to the API. Per-call cost is accumulated into the query's
+telemetry.
 
-**6. Abstention** — the threshold isn't eyeballed: conformal calibration on ~50–100
-labeled (query, verdict) pairs from our own eval set gives a threshold with a bounded
-false-match rate. Output has three tiers: **confirmed** (verified above threshold),
-**candidate — unverified** (strong retrieval, unclear verdict; shown, labeled), and
-**no confident match** (with the closest rejected candidate and the verifier's reason,
-so the reviewer can judge). A cheap score-distribution pre-gate short-circuits obvious
-no-answer queries before verification runs.
+**6. Present.** Ranked results with tier, span, wall-clock label when an OCR anchor
+is near, the verifier's reason, and up to six evidence Docs (modality, time, text).
+If nothing survives: "no confident match", with the closest rejected candidate shown.
+Every run reports per-stage wall time and total API cost.
 
-**7. Presentation** — each result is `[HH:MM:SS–HH:MM:SS]` (plus wall-clock when the
-overlay OCR anchors it), the verifier's cited frame, modality-tagged evidence
-(transcript quote with word times, audio-event tag, detection, caption line), the
-per-element checklist, and the confidence tier. One claim, all supporting spans merged.
+### Roadmap items deliberately not in the code
 
-**Cost per query: ~$0** (planner can run on a local LLM or a sub-cent API call;
-verification is local) — API spend only on escalated verifications.
+- Sample-agreement confidence + conformally calibrated abstention (needs a larger
+  labeled set; tiers are rule-based today).
+- HyDE-style expansion for weak dense retrievals.
+- Peak-score frame selection for the verifier (sampling is uniform today).
+- License-plate reading via per-character voting over detection crops (designed in
+  design.md; not implemented).

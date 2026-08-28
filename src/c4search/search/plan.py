@@ -3,8 +3,8 @@
 Rules with evidence behind them: negations are extracted and never sent to a
 retriever (bi-encoders rank negated pairs at or below random - NevIR);
 attribute-like constraints ("at night") become filters, not searches; and the
-raw query always remains a retrieval stream, so planning cannot do worse than
-not planning.
+unmodified query always remains one of the retrieval streams, which bounds a
+bad plan's damage at added noise.
 """
 
 from c4search.openrouter import chat_json
@@ -115,7 +115,8 @@ def plan_query(query: str, config: dict, meter: dict | None = None) -> dict:
     positives = [sq for sq in plan["sub_queries"] if sq["polarity"] == "positive"]
     if not positives:
         plan["sub_queries"].append(fallback_plan(query)["sub_queries"][0])
-    # The raw query rides along so planning can never lose to not planning.
+    # Keep the unmodified query as its own stream: a bad plan can add noise
+    # but can never drop the user's actual question.
     if all(sq["text"].lower() != query.lower() for sq in plan["sub_queries"]):
         plan["sub_queries"].append({
             "text": query, "modalities": list(MODALITY_MAP),

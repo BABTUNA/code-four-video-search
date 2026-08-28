@@ -1,10 +1,10 @@
-# The wiring diagram: each entry names a registered implementation plus its
-# options. Swapping a component is a one-line change here.
+# Component choices and their options live here; each `impl:` names a
+# registered implementation. Ablation configs override only the blocks they
+# change - see configs/ for the eval rungs.
 
 data_dir: data
 
-# Extractors run in order during `c4 ingest`; entries are added as each
-# extractor lands. Each entry is {impl: <name>, ...options}.
+# Extractors run in order during `c4 ingest`.
 extractors:
   - impl: transcribe
     model: mlx-community/whisper-large-v3-turbo
@@ -23,7 +23,32 @@ extractors:
   - impl: caption
     model: google/gemini-3.5-flash-lite
 
+retrieval:
+  depth: 100          # candidates taken from each retrieval arm
+  rrf_k: 60
+  bm25: true
+  dense: true
+  frames: true
+  audio: true
+  rerank: true
+  rerank_keep: 20
+  rerank_model: BAAI/bge-reranker-v2-m3
+  text_model: BAAI/bge-small-en-v1.5
+  # modalities: [transcript]   # uncomment to restrict which Docs are searchable
+
+merge:
+  sigma_s: 3.0        # score-track smoothing
+  rel_threshold: 0.35 # span threshold, relative to each track's peak
+  gap_s: 8.0          # gaps this short join one span
+  min_s: 2.0          # discard slivers shorter than this
+  pad_s: 2.0          # context padding on every span
+
+planner:
+  enabled: true
+  model: openai/gpt-5-nano
+
 verifier:
+  enabled: true
   model: mlx-community/Qwen2.5-VL-7B-Instruct-4bit
   escalation_model: google/gemini-3.5-flash-lite
   use_local: false  # local Qwen tier available; flip on to trade speed for $0 verification

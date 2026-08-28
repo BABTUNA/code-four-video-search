@@ -1,0 +1,15 @@
+.DS_Store
+.env
+.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+
+backend/.venv/
+frontend/.next/
+frontend/node_modules/
+
+c4-videos/
+data/
+download-videos.sh
+download-part-*.sh

@@ -1,0 +1,15 @@
+# The eval-driven configuration: transcript+caption retrieval (the strongest
+# rung on the labeled set) with VLM verification for abstention. Frame and
+# audio retrieval are off HERE because the labeled queries never require
+# frame-only evidence (a documented label-bootstrap bias); default.yaml keeps
+# them on for open-vocabulary visual queries like "person in a red shirt".
+data_dir: data
+retrieval:
+  modalities: [transcript, caption]
+  frames: false
+  audio: false
+planner: {enabled: true}
+verifier:
+  enabled: true
+  escalation_model: google/gemini-3.5-flash-lite
+  use_local: false

@@ -95,7 +95,8 @@ ablation table into README, cost/time actuals, Loom script outline.
 - **Corpus**: develop on 3 videos (~2 h); scale to ~10–15 h at phase 12. The challenge
   explicitly allows a subset.
 - **Interface**: CLI only (`c4 ingest / search / eval`) — the challenge says a CLI is
-  fine; a UI is a stretch goal after phase 12, not before.
+  perfectly fine, and results are inspectable as formatted terminal output plus the
+  cited evidence files. No frontend for this project.
 - **Budget**: captioning the full subset ≈ $2–5; verification escalations pennies.
   Everything else local. Total well under $15 on the shared key.
 - **The eval set doubles as the dev set** at this scale; stated openly in the README

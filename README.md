@@ -287,6 +287,11 @@ queries are absent because auditing them requires listening.
 Each row is one config file — swapping a rung is a `-c` flag, which is the
 hotswappability demo running for real.
 
+*Reading the columns: **abstention** is the standard selective-prediction term for
+correctly answering "no confident match" - the Abstention column counts the six trap
+queries (events that don't exist in the footage) the config correctly refused, and
+**false abstains** counts real-answer queries it wrongly refused.*
+
 | Config | hit@1 | hit@5 | Abstention | False abstains | s/query | $/query |
 |---|---|---|---|---|---|---|
 | 1. transcripts only | 0.39 | 0.61 | 3/6 | 2 | 2.3 | ~0 |

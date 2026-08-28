@@ -4,11 +4,16 @@ version = "0.1.0"
 description = "Natural-language search over body-worn camera footage"
 requires-python = ">=3.12"
 dependencies = [
+    "clip",
     "mlx-whisper>=0.4.3",
     "numpy>=2",
+    "pillow>=12.3.0",
     "pyyaml>=6",
     "senko>=0.1.0",
+    "torch>=2.13.0",
+    "transformers>=5.16.1",
     "typer>=0.12",
+    "ultralytics>=8.4.131",
 ]
 
 [project.scripts]
@@ -23,3 +28,6 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/c4search"]
+
+[tool.uv.sources]
+clip = { git = "https://github.com/ultralytics/CLIP.git" }

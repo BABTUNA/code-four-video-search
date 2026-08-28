@@ -9,3 +9,6 @@ c4-videos/
 data/
 download-videos.sh
 download-part-*.sh
+
+*.pt
+weights/

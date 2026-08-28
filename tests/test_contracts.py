@@ -17,7 +17,7 @@ VIDEO = VideoMeta(video_id="video_1", path="video_1.mp4", duration_s=60.0,
 
 # Extractors that load real models; their logic is unit-tested in their own
 # test modules and their end-to-end behavior verified on real footage.
-HEAVY = {"transcribe", "diarize"}
+HEAVY = {"transcribe", "diarize", "frames", "detect"}
 
 
 @register_extractor("fake")

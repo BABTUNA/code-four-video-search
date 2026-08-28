@@ -9,3 +9,7 @@ extractors:
   - impl: transcribe
     model: mlx-community/whisper-large-v3-turbo
   - impl: diarize
+  - impl: frames
+    model: google/siglip2-base-patch16-256
+  - impl: detect
+    model: yolov8s-worldv2.pt

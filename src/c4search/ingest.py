@@ -2,6 +2,8 @@ import json
 from dataclasses import asdict
 from pathlib import Path
 
+import numpy as np
+
 from c4search.cache import StageCache
 from c4search.extractors.diarize import speaker_for
 from c4search.media import MediaAssets, prepare, probe
@@ -71,8 +73,17 @@ def ingest_video(source: Path, config: dict) -> dict[str, int]:
 
         for modality in {doc.modality for doc in docs}:
             store.delete_docs(video.video_id, modality)
-        store.add_docs(docs)
+        ids = store.add_docs(docs)
         counts[extractor.name] = len(docs)
+
+        # Convention: an extractor may leave vectors.npy in its stage dir,
+        # aligned with the first N docs it returned.
+        vectors_file = stage_dir / "vectors.npy"
+        if vectors_file.exists():
+            vectors = np.load(vectors_file)
+            store.save_vectors(
+                f"{video.video_id}.{extractor.name}", ids[:len(vectors)], vectors,
+            )
 
     annotate_speakers(store, video.video_id)
     return counts

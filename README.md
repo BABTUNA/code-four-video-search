@@ -36,68 +36,48 @@ for unclear verdicts).
 
 ## 2. Research foundations
 
-The full review is in [docs/research.md](docs/research.md); below are the specific
-results each half of the system is extracted from.
+The figures below are reproduced from the papers themselves (all under CC licenses
+permitting reuse with attribution); our own architecture diagrams are in section 3.
+The full review is in [docs/research.md](docs/research.md).
 
-### 2.1 Modality extraction — why many cheap indexes instead of one smart model
+### 2.1 Modality extraction
 
-**Key diagram 1 — search, not perception, is the bottleneck.** Our diagram; it
-summarizes the "Long Video Haystack" findings of *T\*/LV-Haystack*
-([arXiv 2504.02259](https://arxiv.org/abs/2504.02259)) and the iterative-selection
-results of *VideoAgent* ([arXiv 2403.10517](https://arxiv.org/abs/2403.10517)):
+The bottleneck evidence first: finding 1–5 needle frames among tens of thousands is
+where long-video systems break — existing temporal-search methods reach just 2.1%
+temporal F1 on long video (*T\*/LV-Haystack*,
+[arXiv 2504.02259](https://arxiv.org/abs/2504.02259)), while question-conditioned
+selection matches 256-frame dense baselines while inspecting ~8 frames (*VideoAgent*,
+[arXiv 2403.10517](https://arxiv.org/abs/2403.10517)). The consequence for ingest:
+spend it producing *searchable indexes*, not understanding.
 
-```mermaid
-flowchart LR
-    Q[query over 1-hour video] --> M["monolithic VLM<br/>watches everything"]
-    Q --> S["search stage proposes,<br/>VLM inspects finalists"]
-    M --> F["context limits force sparse sampling;<br/>needle moments fall between frames<br/>(existing temporal search:<br/>2.1% temporal F1)"]
-    S --> W["search lifts accuracy more than<br/>model upgrades at a fixed frame budget;<br/>~8 inspected frames match<br/>256-frame dense baselines"]
-```
-
-Consequence: spend ingest effort producing *searchable indexes*, not understanding.
-
-![T* iterative temporal search](docs/figures/tstar-framework.png)
-*The search-then-inspect loop we adopt the philosophy of: ground the question, search
-iteratively, hand only confirmed frames to the answering VLM. Figure from T\*
-([arXiv 2504.02259](https://arxiv.org/abs/2504.02259), Ye et al., CC BY-SA 4.0).*
-
-**Key diagram 2 — every extractor emits one canonical, self-timestamped record.** Our
-diagram; the pattern follows *Goldfish*'s fixed-time clip windows
-([arXiv 2407.12679](https://arxiv.org/abs/2407.12679)), *Video-RAG*'s visually-aligned
-auxiliary texts ([arXiv 2411.13093](https://arxiv.org/abs/2411.13093)), and *LLoVi*'s
-captions-as-index ([arXiv 2312.17235](https://arxiv.org/abs/2312.17235)):
-
-```mermaid
-flowchart TD
-    V[video.mp4] --> T["ASR (Whisper)<br/>word spans"]
-    V --> C["VLM captioner<br/>5-min chunks"]
-    V --> E["SigLIP 2 frames<br/>0.5 fps instants"]
-    V --> A["CLAP + PANNs<br/>audio-event spans"]
-    V --> D["diarizer / detector /<br/>arousal / motion / clock OCR"]
-    T & C & E & A & D --> R["Doc {video, t_start, t_end, modality, text}<br/>one absolute timeline, per-modality granularity"]
-    R --> DB[(doc store + vector index)]
-```
+The published version of that indexing pattern — extract each modality into queryable,
+timestamped text and retrieve per-request:
 
 ![Video-RAG auxiliary text extraction](docs/figures/videorag-framework.png)
-*The published version of the pattern: extract ASR/OCR/detection into queryable text
-databases, retrieve per-request, integrate. We generalize it to nine extractors and
-persist the index. Figure from Video-RAG
+*Video-RAG extracts ASR, OCR, and object-detection outputs into queryable text
+databases, retrieves per-request, and integrates. We generalize this to nine extractors
+and persist the index. Figure from Video-RAG
 ([arXiv 2411.13093](https://arxiv.org/abs/2411.13093), Luo et al., CC BY 4.0).*
 
-Each modality keeps its natural time grain (a 2-second quote stays 2 seconds; a frame
-is an instant); alignment happens at query time by merging on the shared timeline —
-not by forcing a fixed segment grid at ingest. Why *these* extractors:
+Speech is the dominant index in this domain (*TVR*,
+[arXiv 2001.09099](https://arxiv.org/abs/2001.09099); transcripts improve even the
+strongest visual systems, *Deep Video Discovery*,
+[arXiv 2505.18079](https://arxiv.org/abs/2505.18079)) — but raw Whisper output is a
+hazard: ~1% of transcriptions contain fabricated phrases, 38% of them harmful
+(*Careless Whisper*, FAccT 2024,
+[arXiv 2402.08021](https://arxiv.org/abs/2402.08021)). Our transcriber adopts the
+pipeline below plus the Whisper paper's own decode-failure thresholds
+([arXiv 2212.04356](https://arxiv.org/abs/2212.04356) §4.5) and a stock-hallucination
+blocklist ([arXiv 2501.11378](https://arxiv.org/abs/2501.11378)):
 
-- **Speech first**: transcripts carry the dominant signal (*TVR*,
-  [arXiv 2001.09099](https://arxiv.org/abs/2001.09099); adding transcripts improves
-  even the strongest visual system, *Deep Video Discovery*,
-  [arXiv 2505.18079](https://arxiv.org/abs/2505.18079)) — but hardened, because ~1% of
-  Whisper transcriptions contain fabricated phrases, 38% of them harmful (*Careless
-  Whisper*, FAccT 2024, [arXiv 2402.08021](https://arxiv.org/abs/2402.08021)); we adopt
-  the Whisper paper's own decode-failure thresholds
-  ([arXiv 2212.04356](https://arxiv.org/abs/2212.04356) §4.5), VAD gating
-  ([WhisperX, arXiv 2303.00747](https://arxiv.org/abs/2303.00747)), and a
-  stock-hallucination blocklist ([arXiv 2501.11378](https://arxiv.org/abs/2501.11378)).
+![WhisperX pipeline](docs/figures/whisperx-pipeline.png)
+*VAD pre-segmentation, cut-and-merge, then phoneme-model forced alignment yields
+word-level timestamps and suppresses hallucination on non-speech audio. Figure from
+WhisperX ([arXiv 2303.00747](https://arxiv.org/abs/2303.00747), Bain et al., CC BY
+4.0).*
+
+The remaining extractor choices are each backed by a specific result:
+
 - **Frame-level embeddings, not video-native encoders**: on untrimmed long-form video,
   zero-shot frame-level CLIP beats a trained grounding model (*MAD*,
   [arXiv 2112.00431](https://arxiv.org/abs/2112.00431)); bodycam is one continuous
@@ -110,21 +90,93 @@ not by forcing a fixed segment grid at ingest. Why *these* extractors:
   body-worn audio has direct precedent
   ([arXiv 1711.05355](https://arxiv.org/abs/1711.05355)).
 - **Captions with our vocabulary**: one flash-tier VLM call per 5-minute chunk,
-  prompted for the policing ontology, with the transcript in-prompt as a temporal
-  anchor — chunk-local times are offset to absolute by arithmetic, because VLMs
-  mislocalize timestamps beyond short windows (the needle-frame findings of
-  LV-Haystack).
+  prompted for the policing ontology, transcript in-prompt as a temporal anchor —
+  chunk-local times are offset to absolute by arithmetic, because VLMs mislocalize
+  timestamps beyond short windows (the needle-frame findings of LV-Haystack); the
+  captions-as-index pattern follows *LLoVi*
+  ([arXiv 2312.17235](https://arxiv.org/abs/2312.17235)) and *Goldfish*
+  ([arXiv 2407.12679](https://arxiv.org/abs/2407.12679)).
 - **Domain extras**: speaker roles (officer/civilian), burned-in-clock OCR (absolute
   wall time), and a camera-motion series for pursuits — motion-only activity
   recognition on real police BWV: [arXiv 1904.09062](https://arxiv.org/abs/1904.09062).
 
-### 2.2 Semantic querying — propose, fuse, merge, verify
+### 2.2 Semantic search
 
-**Key diagram 3 — the precision funnel.** Our diagram; the stages come from
-retrieve-then-verify as in *T\**'s search-then-inspect and *Deep Video Discovery*'s
-propose-inspect loop ([arXiv 2505.18079](https://arxiv.org/abs/2505.18079)), fusion
-from *Cormack et al., SIGIR 2009* (RRF), and reranking evidence from the BEIR reranker
-benchmarks and *NevIR* ([arXiv 2305.07614](https://arxiv.org/abs/2305.07614)):
+The query side follows the search-then-inspect decomposition — an explicit,
+question-conditioned search stage proposes, and the answering VLM sees only confirmed
+evidence:
+
+![T* iterative temporal search](docs/figures/tstar-framework.png)
+*T\* grounds the question, searches the timeline iteratively, and hands only confirmed
+frames to the answering VLM — the philosophy our query funnel adopts. Figure from T\*
+([arXiv 2504.02259](https://arxiv.org/abs/2504.02259), Ye et al., CC BY-SA 4.0).*
+
+At corpus scale, the retrieve-top-k-then-answer skeleton is what makes arbitrary video
+length tractable:
+
+![Goldfish retrieval framework](docs/figures/goldfish-framework.png)
+*Goldfish describes fixed-time clips (captions + subtitles), retrieves top-k against
+the query, and answers over only the retrieved clips. Our funnel adds rank fusion, a
+cross-encoder, temporal merging, and a verification stage on top of this shape. Figure
+from Goldfish ([arXiv 2407.12679](https://arxiv.org/abs/2407.12679), Ataallah et al.,
+CC BY 4.0).*
+
+Three negative results dictate where precision work happens in that funnel:
+
+- **Negation cannot live in the embedding query** — bi-encoders rank negated pairs at
+  or below random (*NevIR*, [arXiv 2305.07614](https://arxiv.org/abs/2305.07614);
+  *NegBench*, [arXiv 2501.09425](https://arxiv.org/abs/2501.09425)); it is extracted by
+  the planner and enforced at the cross-encoder and verifier.
+- **Attribute binding fails in embeddings** — CLIP-family models are near bag-of-words
+  on relations ("red *shirt*" vs red *car*; *ARO*,
+  [arXiv 2210.01936](https://arxiv.org/abs/2210.01936)); binding is left to the
+  verifier, which sees actual frames.
+- **Strict top-1 localization is unsolved** — even fully-supervised SOTA reaches ~5%
+  strict R@1 on movie-scale corpora (*SnAG* on MAD,
+  [arXiv 2404.02257](https://arxiv.org/abs/2404.02257)) — so the product surface is a
+  ranked, evidence-bearing shortlist scored on Hit@k, not a single oracle answer.
+
+Verification design also traces to measured failure modes: VLMs capitulate to leading
+framing (*VISE*, [arXiv 2506.07180](https://arxiv.org/abs/2506.07180)), predominantly
+*miss* objects in low light rather than hallucinate them (*DarkQA*,
+[arXiv 2512.24985](https://arxiv.org/abs/2512.24985)), and state near-100% confidence
+in wrong answers ([arXiv 2504.14848](https://arxiv.org/abs/2504.14848)) — so our
+verifier is never told what retrieval expects, treats dark-frame negatives as
+"unclear", and derives confidence from sample agreement with a conformally calibrated
+abstention threshold (*Conformal Abstention*,
+[arXiv 2405.01563](https://arxiv.org/abs/2405.01563)).
+
+## 3. Architecture
+
+Our own diagrams; the full operational spec is in [docs/pipeline.md](docs/pipeline.md).
+
+### 3.1 Modality extraction
+
+Nine extractors run per video (all local except the captioner), each emitting one
+canonical record type on the video's absolute timeline:
+
+```mermaid
+flowchart TD
+    V[video.mp4] --> T["ASR (Whisper)<br/>word spans"]
+    V --> C["VLM captioner<br/>5-min chunks"]
+    V --> E["SigLIP 2 frames<br/>0.5 fps instants"]
+    V --> A["CLAP + PANNs<br/>audio-event spans"]
+    V --> D["diarizer / detector /<br/>arousal / motion / clock OCR"]
+    T & C & E & A & D --> R["Doc {video, t_start, t_end, modality, text}<br/>one absolute timeline, per-modality granularity"]
+    R --> DB[(doc store + vector index)]
+```
+
+Each modality keeps its natural time grain — a 2-second quote stays 2 seconds, a frame
+is an instant, a caption event spans what it spans. Nothing is forced into a fixed
+segment grid at ingest; alignment happens at query time by merging on the shared
+timeline. Stages are content-hash cached, so swapping one component re-runs only that
+stage. Ingest ≈ 15–20 min local compute per video-hour, with captioning overlapping as
+async API calls.
+
+### 3.2 Semantic search
+
+A query flows through a precision funnel — recall first, precision last, expensive
+models only at the narrow end:
 
 ```mermaid
 flowchart LR
@@ -137,25 +189,8 @@ flowchart LR
     Vf --> O["ranked results with evidence,<br/>or calibrated abstention"]
 ```
 
-![Goldfish retrieval framework](docs/figures/goldfish-framework.png)
-*The retrieve-top-k-then-answer skeleton at arbitrary video length: describe fixed-time
-clips (captions + subtitles), retrieve against the query, answer over only the
-retrieved clips. Our funnel adds rank fusion, a cross-encoder, temporal merging, and a
-verification stage on top of this shape. Figure from Goldfish
-([arXiv 2407.12679](https://arxiv.org/abs/2407.12679), Ataallah et al., CC BY 4.0).*
-
-Two placements in this funnel are dictated by negative results in the literature:
-negation is enforced at the cross-encoder and verifier because bi-encoders rank negated
-queries at or below random (NevIR; *NegBench*,
-[arXiv 2501.09425](https://arxiv.org/abs/2501.09425)), and attribute binding ("red
-*shirt*" vs red *car*) is left to the verifier because CLIP-family models are near
-bag-of-words on relations (*ARO*, [arXiv 2210.01936](https://arxiv.org/abs/2210.01936)).
-
-**Key diagram 4 — verification you can trust, including at night.** Our diagram; each
-safeguard traces to a measured failure mode — sycophancy: *VISE*
-([arXiv 2506.07180](https://arxiv.org/abs/2506.07180)); low-light: *DarkQA*
-([arXiv 2512.24985](https://arxiv.org/abs/2512.24985)); calibrated abstention:
-*Conformal Abstention* ([arXiv 2405.01563](https://arxiv.org/abs/2405.01563)):
+The verifier is tiered — local first, API only when the local model is unsure — and
+its confidence comes from agreement, not self-report:
 
 ```mermaid
 flowchart TD
@@ -167,13 +202,11 @@ flowchart TD
     A -->|below| AB["no confident match<br/>(closest rejected shown, with reason)"]
 ```
 
-The output is deliberately a ranked shortlist: even fully-supervised SOTA reaches ~5%
-strict R@1 on movie-scale corpora (*SnAG* on MAD,
-[arXiv 2404.02257](https://arxiv.org/abs/2404.02257)) — top-1 localization on long
-video is unsolved, recall-at-k is achievable, and an evidence reviewer needs candidates
-they can check, not an oracle.
+Output has three tiers — **confirmed**, **candidate (unverified)**, and **no confident
+match** (with the closest rejected candidate and the verifier's reason) — because in an
+evidence context a confident empty answer beats a confident wrong one.
 
-## 3. Rejected ideas: what's worth using vs. what's hype
+## 4. Rejected ideas: what's worth using vs. what's hype
 
 Things we evaluated and decided against, with the evidence that decided it.
 

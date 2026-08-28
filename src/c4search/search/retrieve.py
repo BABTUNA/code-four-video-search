@@ -7,7 +7,10 @@ Precision comes later (rerank, verify) - these only have to not miss.
 
 from c4search.store import Store
 
-TEXT_FREE_MODALITIES = {"frame", "audio_window"}  # searched via vectors instead
+# frame/audio_window are searched via vectors; speaker_turn text is boilerplate
+# ("officer speaking") that would match any query naming a role - turns serve
+# as role annotations and evidence, not as a searchable stream.
+TEXT_FREE_MODALITIES = {"frame", "audio_window", "speaker_turn"}
 
 # Loaded models survive across queries in one process; an eval sweep must not
 # pay from_pretrained once per query.

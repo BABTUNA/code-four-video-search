@@ -3,5 +3,5 @@ data_dir: data
 retrieval:
   modalities: [transcript, speaker_turn, caption, frame, object, scene, wall_clock]
   audio: false
-planner: {enabled: true, model: openai/gpt-5-nano}
+planner: {enabled: true, model: google/gemini-3.5-flash-lite}
 verifier: {enabled: false}

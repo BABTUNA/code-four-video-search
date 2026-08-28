@@ -102,7 +102,7 @@ def plan_query(query: str, config: dict, meter: dict | None = None) -> dict:
 
     try:
         plan, cost = chat_json(
-            model=config.get("model", "openai/gpt-5-nano"),
+            model=config.get("model", "google/gemini-3.5-flash-lite"),
             content=[{"type": "text", "text": PROMPT.format(query=query)}],
             schema=PLAN_SCHEMA, schema_name="query_plan", timeout=60,
         )

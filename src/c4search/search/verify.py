@@ -98,15 +98,16 @@ class Verifier:
             "escalation_model", "google/gemini-3.5-flash-lite")
         self.max_frames = config.get("max_frames", 8)
         self.use_local = config.get("use_local", True)
-        self._model = None
+        self.cost_usd = 0.0
 
     def _local_verdict(self, prompt: str, frame_paths: list[Path]) -> dict | None:
         from mlx_vlm import generate, load
         from mlx_vlm.prompt_utils import apply_chat_template
 
-        if self._model is None:
-            self._model = load(self.model_id)
-        model, processor = self._model
+        from c4search.search.retrieve import cached
+
+        model, processor = cached(f"vlm:{self.model_id}",
+                                  lambda: load(self.model_id))
         formatted = apply_chat_template(
             processor, model.config, prompt, num_images=len(frame_paths))
         output = generate(
@@ -123,9 +124,10 @@ class Verifier:
             content.append({"type": "image_url", "image_url": {
                 "url": f"data:image/jpeg;base64,{image}"}})
         try:
-            verdict, _cost = chat_json(
+            verdict, cost = chat_json(
                 model=self.escalation_model, content=content,
                 schema=VERDICT_SCHEMA, schema_name="verdict", timeout=90)
+            self.cost_usd += cost or 0.0
             return verdict
         except RuntimeError:
             return None

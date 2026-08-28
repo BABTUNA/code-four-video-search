@@ -16,28 +16,42 @@ def media_info(store: Store, video_id: str) -> dict:
 
 def retrieve_subquery(retrievers: Retrievers, sub_query: dict, depth: int) -> list[int]:
     """Fused hits for one positive sub-query, filtered to its modalities."""
-    queries = [sub_query["text"], *sub_query.get("variants", [])[:3]]
+    config = retrievers.config
     rankings = {}
-    for index, text in enumerate(queries):
-        rankings[f"bm25_{index}"] = retrievers.bm25(text, depth)
-    rankings["dense"] = retrievers.dense_text(sub_query["text"], depth)
-    rankings["frames"] = retrievers.frames(sub_query["text"], depth)
-    rankings["audio"] = retrievers.audio(sub_query["text"], depth)
+    if config.get("bm25", True):
+        queries = [sub_query["text"], *sub_query.get("variants", [])[:3]]
+        for index, text in enumerate(queries):
+            rankings[f"bm25_{index}"] = retrievers.bm25(text, depth)
+    if config.get("dense", True):
+        rankings["dense"] = retrievers.dense_text(sub_query["text"], depth)
+    if config.get("frames", True):
+        rankings["frames"] = retrievers.frames(sub_query["text"], depth)
+    if config.get("audio", True):
+        rankings["audio"] = retrievers.audio(sub_query["text"], depth)
 
     allowed = doc_modalities(sub_query)
-    fused = [doc_id for doc_id, _ in rrf(rankings)]
+    if config.get("modalities") is not None:
+        allowed &= set(config["modalities"])
+    fused = [doc_id for doc_id, _ in rrf(rankings, k=config.get("rrf_k", 60))]
     docs = retrievers.store.get_docs(fused)
     return [doc_id for doc_id in fused if docs[doc_id].modality in allowed]
 
 
 def run_search(query: str, store: Store, config: dict, verify: bool = True,
                use_planner: bool = True, top: int = 5) -> dict:
+    from time import perf_counter
+
     retrieval_config = config.get("retrieval", {})
     depth = retrieval_config.get("depth", 100)
     keep = retrieval_config.get("rerank_keep", 20)
+    telemetry = {"cost_usd": 0.0, "stage_s": {}}
 
-    plan = (plan_query(query, config.get("planner", {}))
+    started = perf_counter()
+    planner_config = dict(config.get("planner", {}))
+    planner_config.setdefault("cache_dir", str(store.root / "plans"))
+    plan = (plan_query(query, planner_config, telemetry)
             if use_planner else plan_query(query, {"enabled": False}))
+    telemetry["stage_s"]["plan"] = round(perf_counter() - started, 2)
     positives = [sq for sq in plan["sub_queries"] if sq["polarity"] == "positive"]
     negatives = [sq for sq in plan["sub_queries"] if sq["polarity"] == "negative"]
 
@@ -50,22 +64,29 @@ def run_search(query: str, store: Store, config: dict, verify: bool = True,
     for video_id in durations:
         durations[video_id] = media_info(store, video_id)["duration_s"]
 
+    started = perf_counter()
     tracks: dict[str, dict] = {}
     hits_by_video: dict[str, list] = {}
     all_docs: dict = {}
     required: list[str] = []
     for index, sub_query in enumerate(positives):
         sq_id = f"sq{index}"
-        if sub_query["role"] == "required":
-            required.append(sq_id)
         hit_ids = retrieve_subquery(retrievers, sub_query, depth)
+        # A required sub-query with zero hits (e.g. a visual sub-query in a
+        # transcripts-only ablation rung) must not AND-out every candidate:
+        # absence of an index is not evidence of absence of the event.
+        if sub_query["role"] == "required" and hit_ids:
+            required.append(sq_id)
         docs = store.get_docs(hit_ids)
         all_docs.update(docs)
 
         # Rerank the text-bearing hits; vector-only hits keep fused ranks.
         text_hits = [(doc_id, docs[doc_id].text) for doc_id in hit_ids
-                     if docs[doc_id].text]
-        reranked = reranker.rerank(sub_query["text"], text_hits, keep)
+                     if docs[doc_id].text][:depth]
+        if retrieval_config.get("rerank", True):
+            reranked = reranker.rerank(sub_query["text"], text_hits, keep)
+        else:
+            reranked = [doc_id for doc_id, _ in text_hits[:keep]]
         vector_hits = [doc_id for doc_id in hit_ids if not docs[doc_id].text]
         weighted = (
             [(doc_id, hit_weight(rank)) for rank, doc_id in enumerate(reranked, 1)]
@@ -83,11 +104,18 @@ def run_search(query: str, store: Store, config: dict, verify: bool = True,
             if video_hits:
                 tracks[sq_id][video_id] = score_track(video_hits, docs, duration)
 
-    candidates = candidate_segments(tracks, required, hits_by_video, all_docs, top=top)
+    telemetry["stage_s"]["retrieve_rerank"] = round(perf_counter() - started, 2)
+
+    started = perf_counter()
+    candidates = candidate_segments(tracks, required, hits_by_video, all_docs,
+                                    top=top, params=config.get("merge", {}))
     candidates = apply_scene_filter(candidates, plan.get("scene_filter", ""), store)
     candidates = apply_anchor(candidates, plan, store, config)
+    telemetry["stage_s"]["merge"] = round(perf_counter() - started, 2)
 
+    started = perf_counter()
     results = []
+    verify = verify and config.get("verifier", {}).get("enabled", True)
     if verify and candidates:
         from c4search.search.verify import Verifier
         verifier = Verifier(config.get("verifier", {}))
@@ -99,10 +127,15 @@ def run_search(query: str, store: Store, config: dict, verify: bool = True,
             verdict = verifier.verify(
                 candidate, elements, store, media_info(store, candidate.video_id))
             results.append({"candidate": candidate, "verdict": verdict})
+        telemetry["cost_usd"] += verifier.cost_usd
     else:
         results = [{"candidate": c, "verdict": {"tier": "unverified"}}
                    for c in candidates]
-    return {"plan": plan, "results": results, "docs": all_docs}
+    telemetry["stage_s"]["verify"] = round(perf_counter() - started, 2)
+    telemetry["cost_usd"] = round(telemetry["cost_usd"], 5)
+    telemetry["total_s"] = round(sum(telemetry["stage_s"].values()), 2)
+    return {"plan": plan, "results": results, "docs": all_docs,
+            "telemetry": telemetry}
 
 
 def apply_scene_filter(candidates: list[Candidate], scene: str,

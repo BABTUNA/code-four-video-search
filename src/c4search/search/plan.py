@@ -9,10 +9,11 @@ not planning.
 
 from c4search.openrouter import chat_json
 
-# Plan modalities -> Doc modalities they retrieve against.
+# Plan modalities -> Doc modalities they retrieve against. The burned-in
+# clock is on-screen text, so wall_clock rides with visual.
 MODALITY_MAP = {
     "speech": ["transcript", "speaker_turn"],
-    "visual": ["frame", "caption", "object", "scene"],
+    "visual": ["frame", "caption", "object", "scene", "wall_clock"],
     "audio": ["audio_window", "audio_tag", "vocal_arousal", "motion"],
     "caption": ["caption"],
 }
@@ -77,16 +78,36 @@ def fallback_plan(query: str) -> dict:
     }
 
 
-def plan_query(query: str, config: dict) -> dict:
-    """One cheap LLM call; identity plan if the call fails or is disabled."""
+def plan_query(query: str, config: dict, meter: dict | None = None) -> dict:
+    """One cheap LLM call; identity plan if the call fails or is disabled.
+
+    Plans are disk-cached per query text: ablation rungs and eval reruns then
+    see the identical plan, so rung deltas measure the pipeline, not planner
+    variance - and repeated runs stop costing API calls.
+    """
     if not config.get("enabled", True):
         return fallback_plan(query)
+
+    import hashlib
+    import json
+    from pathlib import Path
+
+    cache_file = None
+    cache_dir = config.get("cache_dir")
+    if cache_dir:
+        digest = hashlib.sha256(query.lower().encode()).hexdigest()[:16]
+        cache_file = Path(cache_dir) / f"plan_{digest}.json"
+        if cache_file.exists():
+            return json.loads(cache_file.read_text())
+
     try:
-        plan, _cost = chat_json(
+        plan, cost = chat_json(
             model=config.get("model", "openai/gpt-5-nano"),
             content=[{"type": "text", "text": PROMPT.format(query=query)}],
             schema=PLAN_SCHEMA, schema_name="query_plan", timeout=60,
         )
+        if meter is not None:
+            meter["cost_usd"] = meter.get("cost_usd", 0.0) + (cost or 0.0)
     except RuntimeError:
         return fallback_plan(query)
 
@@ -100,6 +121,9 @@ def plan_query(query: str, config: dict) -> dict:
             "text": query, "modalities": list(MODALITY_MAP),
             "role": "supporting", "polarity": "positive", "variants": [],
         })
+    if cache_file is not None:
+        cache_file.parent.mkdir(parents=True, exist_ok=True)
+        cache_file.write_text(json.dumps(plan))
     return plan
 
 

@@ -91,23 +91,46 @@ def candidate_segments(
     hits_by_video: dict[str, list[tuple[int, float]]],
     docs: dict[int, Doc],
     top: int = 10,
+    params: dict | None = None,
 ) -> list[Candidate]:
     """Intersect required sub-query spans per video; score by track mass."""
+    params = params or {}
+    sigma = params.get("sigma_s", 3.0)
+
+    def to_spans(track: np.ndarray) -> list[tuple[float, float]]:
+        return spans_from_track(
+            smooth(track, sigma),
+            rel_threshold=params.get("rel_threshold", 0.35),
+            gap_s=params.get("gap_s", 8.0),
+            min_s=params.get("min_s", 2.0),
+            pad_s=params.get("pad_s", 2.0),
+        )
+
     videos = {video for tracks in tracks_by_subquery.values() for video in tracks}
     candidates = []
     for video in videos:
-        spans = None
-        for sq_id in required or list(tracks_by_subquery):
-            track = tracks_by_subquery.get(sq_id, {}).get(video)
-            sq_spans = spans_from_track(smooth(track)) if track is not None else []
-            spans = sq_spans if spans is None else intersect_spans(spans, sq_spans)
+        if required:
+            # AND on the timeline: every required sub-query must cover the span.
+            spans = None
+            for sq_id in required:
+                track = tracks_by_subquery.get(sq_id, {}).get(video)
+                sq_spans = to_spans(track) if track is not None else []
+                spans = sq_spans if spans is None else intersect_spans(spans, sq_spans)
+        else:
+            # Only supporting sub-queries: union their spans instead - a
+            # supporting stream should never veto another stream's evidence.
+            spans = []
+            for tracks in tracks_by_subquery.values():
+                track = tracks.get(video)
+                if track is not None:
+                    spans.extend(to_spans(track))
         for start, end in merge_overlaps(spans or []):
             evidence = [
                 doc_id for doc_id, _ in hits_by_video.get(video, [])
                 if docs[doc_id].t_start <= end and docs[doc_id].t_end >= start
             ]
             score = sum(
-                float(smooth(tracks_by_subquery[sq_id][video])[int(start):int(end) + 1].mean())
+                float(smooth(tracks_by_subquery[sq_id][video], sigma)[int(start):int(end) + 1].mean())
                 for sq_id in tracks_by_subquery if video in tracks_by_subquery[sq_id]
             )
             candidates.append(Candidate(video, start, end, round(score, 5), evidence))

@@ -1,4 +1,5 @@
 import base64
+import json
 import subprocess
 from pathlib import Path
 
@@ -114,13 +115,21 @@ class CaptionExtractor:
 
         docs = []
         for index, (start, end) in enumerate(chunk_spans(video.duration_s, self.chunk_s)):
-            transcript = "\n".join(
-                f"[{doc.t_start - start:.0f}s] {doc.text}"
-                for _, doc in transcript_docs if start <= doc.t_start < end
-            )
-            chunk_file = workdir / f"chunk_{index:03d}.mp4"
-            self.encode_chunk(assets.proxy, start, end - start, chunk_file)
-            events, cost = self.caption_chunk(chunk_file, transcript)
+            # Per-chunk response cache: one flaky chunk must never re-bill the
+            # chunks that already succeeded on a rerun.
+            response_file = workdir / f"chunk_{index:03d}.json"
+            if response_file.exists():
+                saved = json.loads(response_file.read_text())
+                events, cost = saved["events"], saved["cost"]
+            else:
+                transcript = "\n".join(
+                    f"[{doc.t_start - start:.0f}s] {doc.text}"
+                    for _, doc in transcript_docs if start <= doc.t_start < end
+                )
+                chunk_file = workdir / f"chunk_{index:03d}.mp4"
+                self.encode_chunk(assets.proxy, start, end - start, chunk_file)
+                events, cost = self.caption_chunk(chunk_file, transcript)
+                response_file.write_text(json.dumps({"events": events, "cost": cost}))
+                chunk_file.unlink()  # keep the cache dir small
             docs.extend(events_to_docs(events, video.video_id, start, end, cost))
-            chunk_file.unlink()  # keep the cache dir small
         return docs

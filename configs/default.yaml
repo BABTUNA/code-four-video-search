@@ -1,0 +1,8 @@
+# The wiring diagram: each entry names a registered implementation plus its
+# options. Swapping a component is a one-line change here.
+
+data_dir: data
+
+# Extractors run in order during `c4 ingest`; entries are added as each
+# extractor lands (e.g. {impl: transcribe, model: whisper-large-v3-turbo}).
+extractors: []

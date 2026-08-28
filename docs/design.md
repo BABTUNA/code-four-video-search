@@ -37,10 +37,10 @@ computed by us. All local/free except captioning.
 
 | Stage | Output | Why |
 |---|---|---|
-| Transcriber — mlx-whisper large-v3-turbo (local, ~10x realtime on M-series) | word-timestamped utterances, hallucination-filtered via avg_logprob / no_speech / compression-ratio thresholds | speech dominates bodycam evidence; Whisper invents text over wind and sirens, and hallucinated text that matches a query is a precision disaster |
+| Transcriber — mlx-whisper large-v3-turbo (local, ~10x realtime on M-series) | word-timestamped utterances, hallucination-filtered via the Whisper paper's own thresholds (compression-ratio > 2.4, avg logprob < −1.0, no-speech > 0.6), VAD gating, and a blocklist of Whisper's known stock hallucinations | speech dominates bodycam evidence; ~1% of Whisper transcriptions contain fabricated phrases and 38% of those are harmful ("Careless Whisper", FAccT 2024) — hallucinated text that matches a query is a precision disaster and, in this domain, a legal hazard |
 | Captioner — Gemini flash-lite tier via OpenRouter, one call per 5-min 480p chunk, low media resolution (the only paid ingest stage) | structured events (action, people+clothing, vehicles, plates, lighting, non-speech audio) with chunk-local times we offset to absolute; transcript rides along in-prompt as temporal anchor | the only index whose vocabulary we control — prompted for the policing ontology so "handcuffing" is findable though never spoken |
 | FrameEmbedder — SigLIP 2 so400m @ 0.5 fps (local, MPS) | image vectors | catches what the captioner didn't mention; frame-level embeddings remain the strongest practical baseline for continuous single-shot footage ([CLIP4Clip, arXiv 2104.08860](https://arxiv.org/abs/2104.08860); [arXiv 2406.01604](https://arxiv.org/abs/2406.01604)) — bodycam has no shot structure for video-native encoders to exploit |
-| AudioTagger — CLAP zero-shot (local) + RMS loudness spikes | audio event spans (shouting, siren, gunshot, glass breaking...) | "raised voice" is unanswerable from a transcript — ASR strips prosody ([CLAP, arXiv 2211.06687](https://arxiv.org/abs/2211.06687)) |
+| AudioTagger — CLAP zero-shot (local) + RMS loudness spikes | audio event spans (shouting, siren, gunshot, glass breaking...) | "raised voice" is unanswerable from a transcript — ASR strips prosody ([CLAP, arXiv 2211.06687](https://arxiv.org/abs/2211.06687)); categorical emotion models are unreliable on real-world audio (~0.34 macro-F1, Odyssey 2024), so we stick to overt events + loudness, with wav2vec2 arousal as an optional upgrade for graded escalation |
 
 Storage: SQLite for Docs + numpy brute-force vectors (~100k vectors at this corpus size;
 ANN indexes buy nothing — one matmul per query is milliseconds).
@@ -69,6 +69,10 @@ query → Planner → Retrievers (BM25 + dense text + frames) → RRF fusion
   ([Cormack et al., SIGIR 2009](https://cormack.uwaterloo.ca/cormacksigir09-rrf.pdf)).
 - **Temporal merge**: overlapping/nearby hits across modalities combine into candidate
   segments with a minimum width (sliver answers are unreviewable).
+- **License plates / on-screen text**: VLMs are measurably weak on non-semantic strings
+  (OCRBench), so plate reads are aggregated across frames — per-character majority
+  voting over repeated sightings, the standard ALPR trick (29%→69% single- vs
+  multi-frame in the literature) — rather than trusting any single read.
 - **Verifier** (cheap VLM): sees ~6 real frames + ±20s of transcript per candidate;
   returns match / confidence / reason. This one stage answers every embedding failure
   mode at once — negation, attribute binding, look-alikes (hands behind back ≠
@@ -83,6 +87,15 @@ diagram, so swapping a component is a one-line diff. Contract tests are parametr
 over the registry, so a swap cannot silently break the interface. Content-hash stage
 caching keys each stage's output by (input file, config subtree): swapping the captioner
 re-runs captioning, not transcription.
+
+## What "good" looks like
+
+Long-form grounding benchmarks calibrate expectations: even fully-supervised SOTA
+reaches ~5% strict R@1 on movie-scale corpora (MAD) and 23–33% on egocentric footage
+(Ego4D NLQ) — while recall-at-k over candidate windows is respectable everywhere. So the
+product surface is a **ranked, evidence-bearing shortlist for a human reviewer**, scored
+on Hit@k and precision-on-hard-queries, not a single oracle answer. See
+[research.md](research.md) for the full literature review.
 
 ## Evaluation without labeled data
 

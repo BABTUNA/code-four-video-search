@@ -1,0 +1,355 @@
+{
+  "config": "configs/rung2-captions.yaml",
+  "no_verify": false,
+  "summary": {
+    "queries": 24,
+    "hit@1": 0.444,
+    "hit@5": 0.778,
+    "false_abstain": 0,
+    "abstention_acc": 0.0,
+    "hit@1_direct": 0.444,
+    "hit@1_cross_modal": 0.444,
+    "total_s": 45.5,
+    "total_cost_usd": 0.0,
+    "s_per_query": 1.9,
+    "cost_per_query_usd": 0.0
+  },
+  "per_query": [
+    {
+      "query": "officer orders the driver to step out of the vehicle",
+      "kind": "direct",
+      "hit_rank": 1,
+      "abstained": false,
+      "cost_usd": 0.0,
+      "stage_s": {
+        "plan": 0.0,
+        "retrieve_rerank": 15.05,
+        "merge": 0.0,
+        "verify": 0.0
+      },
+      "total_s": 15.05
+    },
+    {
+      "query": "a field sobriety test is conducted",
+      "kind": "cross_modal",
+      "hit_rank": 1,
+      "abstained": false,
+      "cost_usd": 0.0,
+      "stage_s": {
+        "plan": 0.0,
+        "retrieve_rerank": 1.47,
+        "merge": 0.0,
+        "verify": 0.0
+      },
+      "total_s": 1.47
+    },
+    {
+      "query": "officer threatens to take someone to jail",
+      "kind": "direct",
+      "hit_rank": 2,
+      "abstained": false,
+      "cost_usd": 0.0,
+      "stage_s": {
+        "plan": 0.0,
+        "retrieve_rerank": 1.46,
+        "merge": 0.0,
+        "verify": 0.0
+      },
+      "total_s": 1.46
+    },
+    {
+      "query": "officer explains the bail amount and court date",
+      "kind": "direct",
+      "hit_rank": 1,
+      "abstained": false,
+      "cost_usd": 0.0,
+      "stage_s": {
+        "plan": 0.0,
+        "retrieve_rerank": 0.82,
+        "merge": 0.0,
+        "verify": 0.0
+      },
+      "total_s": 0.82
+    },
+    {
+      "query": "officers discuss finding a driver asleep at a traffic light",
+      "kind": "direct",
+      "hit_rank": null,
+      "abstained": false,
+      "cost_usd": 0.0,
+      "stage_s": {
+        "plan": 0.0,
+        "retrieve_rerank": 2.74,
+        "merge": 0.0,
+        "verify": 0.0
+      },
+      "total_s": 2.74
+    },
+    {
+      "query": "a person is being handcuffed",
+      "kind": "cross_modal",
+      "hit_rank": 1,
+      "abstained": false,
+      "cost_usd": 0.0,
+      "stage_s": {
+        "plan": 0.0,
+        "retrieve_rerank": 1.0,
+        "merge": 0.0,
+        "verify": 0.0
+      },
+      "total_s": 1.0
+    },
+    {
+      "query": "a vehicle stopped by police at night",
+      "kind": "cross_modal",
+      "hit_rank": null,
+      "abstained": false,
+      "cost_usd": 0.0,
+      "stage_s": {
+        "plan": 0.0,
+        "retrieve_rerank": 1.72,
+        "merge": 0.0,
+        "verify": 0.0
+      },
+      "total_s": 1.72
+    },
+    {
+      "query": "firefighters respond to a vehicle fire at night",
+      "kind": "cross_modal",
+      "hit_rank": 2,
+      "abstained": false,
+      "cost_usd": 0.0,
+      "stage_s": {
+        "plan": 0.0,
+        "retrieve_rerank": 1.68,
+        "merge": 0.0,
+        "verify": 0.0
+      },
+      "total_s": 1.68
+    },
+    {
+      "query": "an officer conducts a traffic stop in daylight",
+      "kind": "cross_modal",
+      "hit_rank": null,
+      "abstained": false,
+      "cost_usd": 0.0,
+      "stage_s": {
+        "plan": 0.0,
+        "retrieve_rerank": 1.59,
+        "merge": 0.0,
+        "verify": 0.0
+      },
+      "total_s": 1.59
+    },
+    {
+      "query": "an officer reads someone their Miranda rights",
+      "kind": "direct",
+      "hit_rank": 1,
+      "abstained": false,
+      "cost_usd": 0.0,
+      "stage_s": {
+        "plan": 0.0,
+        "retrieve_rerank": 1.45,
+        "merge": 0.0,
+        "verify": 0.0
+      },
+      "total_s": 1.45
+    },
+    {
+      "query": "officers pursue someone on foot",
+      "kind": "cross_modal",
+      "hit_rank": 1,
+      "abstained": false,
+      "cost_usd": 0.0,
+      "stage_s": {
+        "plan": 0.0,
+        "retrieve_rerank": 0.82,
+        "merge": 0.0,
+        "verify": 0.0
+      },
+      "total_s": 0.82
+    },
+    {
+      "query": "someone is placed in the back of a patrol car",
+      "kind": "cross_modal",
+      "hit_rank": 2,
+      "abstained": false,
+      "cost_usd": 0.0,
+      "stage_s": {
+        "plan": 0.0,
+        "retrieve_rerank": 1.71,
+        "merge": 0.0,
+        "verify": 0.0
+      },
+      "total_s": 1.71
+    },
+    {
+      "query": "an officer asks about drugs or alcohol",
+      "kind": "direct",
+      "hit_rank": 2,
+      "abstained": false,
+      "cost_usd": 0.0,
+      "stage_s": {
+        "plan": 0.0,
+        "retrieve_rerank": 1.4,
+        "merge": 0.0,
+        "verify": 0.0
+      },
+      "total_s": 1.4
+    },
+    {
+      "query": "a breathalyzer test is discussed or given",
+      "kind": "direct",
+      "hit_rank": 1,
+      "abstained": false,
+      "cost_usd": 0.0,
+      "stage_s": {
+        "plan": 0.0,
+        "retrieve_rerank": 1.68,
+        "merge": 0.0,
+        "verify": 0.0
+      },
+      "total_s": 1.68
+    },
+    {
+      "query": "a weapon is found or discussed",
+      "kind": "cross_modal",
+      "hit_rank": 1,
+      "abstained": false,
+      "cost_usd": 0.0,
+      "stage_s": {
+        "plan": 0.0,
+        "retrieve_rerank": 1.97,
+        "merge": 0.0,
+        "verify": 0.0
+      },
+      "total_s": 1.97
+    },
+    {
+      "query": "a car crash or collision scene",
+      "kind": "cross_modal",
+      "hit_rank": null,
+      "abstained": false,
+      "cost_usd": 0.0,
+      "stage_s": {
+        "plan": 0.0,
+        "retrieve_rerank": 1.58,
+        "merge": 0.0,
+        "verify": 0.0
+      },
+      "total_s": 1.58
+    },
+    {
+      "query": "an ambulance or medics are called to the scene",
+      "kind": "direct",
+      "hit_rank": 4,
+      "abstained": false,
+      "cost_usd": 0.0,
+      "stage_s": {
+        "plan": 0.0,
+        "retrieve_rerank": 0.85,
+        "merge": 0.0,
+        "verify": 0.0
+      },
+      "total_s": 0.85
+    },
+    {
+      "query": "a vehicle is towed or impounded",
+      "kind": "direct",
+      "hit_rank": 2,
+      "abstained": false,
+      "cost_usd": 0.0,
+      "stage_s": {
+        "plan": 0.0,
+        "retrieve_rerank": 0.96,
+        "merge": 0.0,
+        "verify": 0.0
+      },
+      "total_s": 0.96
+    },
+    {
+      "query": "a gunshot is fired",
+      "kind": "no_answer",
+      "hit_rank": null,
+      "abstained": false,
+      "cost_usd": 0.0,
+      "stage_s": {
+        "plan": 0.0,
+        "retrieve_rerank": 0.71,
+        "merge": 0.0,
+        "verify": 0.0
+      },
+      "total_s": 0.71
+    },
+    {
+      "query": "a police K-9 searches a vehicle",
+      "kind": "no_answer",
+      "hit_rank": null,
+      "abstained": false,
+      "cost_usd": 0.0,
+      "stage_s": {
+        "plan": 0.0,
+        "retrieve_rerank": 0.92,
+        "merge": 0.0,
+        "verify": 0.0
+      },
+      "total_s": 0.92
+    },
+    {
+      "query": "an officer deploys a taser",
+      "kind": "no_answer",
+      "hit_rank": null,
+      "abstained": false,
+      "cost_usd": 0.0,
+      "stage_s": {
+        "plan": 0.0,
+        "retrieve_rerank": 0.92,
+        "merge": 0.0,
+        "verify": 0.0
+      },
+      "total_s": 0.92
+    },
+    {
+      "query": "a house is on fire",
+      "kind": "no_answer",
+      "hit_rank": null,
+      "abstained": false,
+      "cost_usd": 0.0,
+      "stage_s": {
+        "plan": 0.0,
+        "retrieve_rerank": 0.67,
+        "merge": 0.0,
+        "verify": 0.0
+      },
+      "total_s": 0.67
+    },
+    {
+      "query": "an officer performs CPR",
+      "kind": "no_answer",
+      "hit_rank": null,
+      "abstained": false,
+      "cost_usd": 0.0,
+      "stage_s": {
+        "plan": 0.0,
+        "retrieve_rerank": 1.01,
+        "merge": 0.0,
+        "verify": 0.0
+      },
+      "total_s": 1.01
+    },
+    {
+      "query": "a school bus is visible",
+      "kind": "no_answer",
+      "hit_rank": null,
+      "abstained": false,
+      "cost_usd": 0.0,
+      "stage_s": {
+        "plan": 0.0,
+        "retrieve_rerank": 1.32,
+        "merge": 0.0,
+        "verify": 0.0
+      },
+      "total_s": 1.32
+    }
+  ]
+}

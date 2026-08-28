@@ -261,70 +261,71 @@ Things we evaluated and decided against, with the evidence that decided it.
 
 ## 6. Evaluation
 
-**Corpus**: the 10 shortest videos (2.53 hours, ~15,600 indexed docs). Ingest measured
-at ~12 min of local compute per video-hour plus $0.25 of captioning for the whole
-corpus. **Query set**: 12 queries — 9 answerable (14 truth spans), 3 no-answer traps
-seeded with real corpus distractors (attorney talk with no Miranda reading, pet dogs
-at a fire scene, verified zero gunshots). Truth spans were proposed by scanning every
-transcript and caption, then audited by frame extraction and transcript review with
-speaker roles; rejected candidates are documented inline in
-[eval/queries.yaml](eval/queries.yaml) (cuffs being *removed*, a stay-in-the-car
-exchange, four daylight stops proposed for a night query). A hit = tIoU >= 0.3 or
-prediction midpoint inside truth. Every run logs per-stage wall time and API cost to
-`eval/results-<timestamp>.json`.
+**Corpus**: the 20 shortest videos — 6.67 hours, ~39,500 indexed docs. Ingest measured
+at ~12 min of local compute per video-hour and **$0.90 of captioning for the entire
+corpus**. **Query set**: 24 queries — 18 answerable (58 truth spans) and 6 no-answer
+traps seeded with real corpus distractors ("I'm glad it *wasn't* shots fired", pet
+dogs at a fire scene for the K-9 trap, medics everywhere but no CPR). Truth spans were
+proposed by scanning every transcript and caption, then audited by frame extraction
+and transcript review with speaker roles; every rejected candidate is documented in
+[eval/queries.yaml](eval/queries.yaml) — cuffs being *removed*, after-the-fact
+retellings of a pursuit, a driver named Chase matching the pursuit pattern, and two
+caption-proposed spans whose frame checks showed terrain and a dashcam gate instead of
+the event. A hit = tIoU >= 0.3 or prediction midpoint inside truth. Every run logs
+per-stage wall time and API cost to `eval/results-<timestamp>.json`.
 
-Honest caveats, stated up front: at 12 queries each answerable query is ~11 points of
-hit@1, so read coarse trends, not decimals; the eval set doubled as the development
-set; label discovery through our own transcripts/captions is biased toward queries
-those indexes can answer (no frame-only query like "person in a red shirt" is
-represented); and prosody queries are absent because auditing them requires listening.
+Two labels **changed when the corpus grew** from 10 to 20 videos — the exact hazard
+the literature warns about, caught by re-verification: Miranda readings now exist
+(previously a valid no-answer trap), and full field sobriety tests are now conducted
+(the query had been narrowed to "asks about" when none were). Stated caveats: the
+eval set doubled as the development set; label discovery through our own
+transcripts/captions is biased toward queries those indexes can answer; prosody
+queries are absent because auditing them requires listening.
 
 ### The build-up ladder: what each index bought, and what it cost
 
-Each row is one config file — swapping a rung is a one-line `-c` flag, which is the
+Each row is one config file — swapping a rung is a `-c` flag, which is the
 hotswappability demo running for real.
 
 | Config | hit@1 | hit@5 | Abstention | False abstains | s/query | $/query |
 |---|---|---|---|---|---|---|
-| 1. transcripts only | 0.33 | 0.56 | 1/3 | 2 | 2.1 | ~0 |
-| 2. + captions | **0.56** | **0.78** | 0/3 | 0 | 2.6 | ~0 |
-| 3. + frames/objects | 0.33 | 0.44 | 0/3 | 1 | 3.0 | ~0 |
-| 4. + audio/arousal/motion | 0.33 | 0.56 | 0/3 | 0 | 3.1 | ~0 |
-| 5. + VLM verification | 0.33 | 0.44 | **3/3** | 3 | 14.8 | $0.013 |
-| recommended (2 + verify) | 0.44 | 0.56 | **3/3** | 3 | 14.2 | $0.013 |
+| 1. transcripts only | 0.39 | 0.61 | 3/6 | 2 | 2.3 | ~0 |
+| 2. + captions | 0.44 | **0.78** | 0/6 | 0 | 1.9 | ~0 |
+| 3. + frames/objects | 0.44 | 0.61 | 0/6 | 1 | 2.1 | ~0 |
+| 4. + audio/arousal/motion | 0.44 | 0.67 | 0/6 | 1 | 2.3 | ~0 |
+| 5. + VLM verification (all indexes) | 0.44 | 0.56 | 5/6 | 4 | 14.9 | $0.014 |
+| **recommended** (captions retrieval + verify) | **0.50** | 0.67 | **6/6** | 3 | 12.8 | $0.014 |
 
 What the table says:
 
-1. **Captions are the highest-value index.** They double transcript-only hit@1 and
-   raise hit@5 to 0.78, for $0.25 of one-time cost over the whole corpus — "a person
-   is being handcuffed" and the vehicle-fire query are findable only because a
-   caption says so in our vocabulary.
-2. **Frame and audio retrieval added noise on this query set** — rungs 3–4 displace
-   caption evidence in fusion faster than they add recall. The label-bootstrap bias
-   above is the likely explanation (no query here *requires* frame-only evidence),
-   so the default config keeps them on for open-vocabulary visual queries; the
-   [recommended config](configs/recommended.yaml) turns them off and states why.
-3. **Verification buys abstention, not precision.** Every unverified rung answers
-   the three trap queries with confident nonsense (0/3); verification refuses all
-   three correctly — at the price of three false abstains and ~14s + $0.013 per
-   query. On direct speech queries the recommended config reaches 0.8 hit@1 with
-   perfect abstention. In an evidence-review setting we take that trade, and the
-   table lets a reader take the other side.
-4. **The eval caught the labels being wrong — in the system's favor.** The
-   fire query's top hit was video_11, which the label scan had missed; frames
-   confirmed a burning truck with fire crews arriving at 135s, and the truth set was
-   corrected. Diagnosing the same run also exposed scene-doc flooding ("outdoors at
-   night" spans matching scene words in queries and drowning fusion), which is why
-   scene attributes are now filter-only — the eval harness earned both fixes.
+1. **Captions are the highest-value index.** They lift hit@5 from 0.61 to 0.78 and
+   rescue queries transcripts cannot carry ("a person is being handcuffed", the foot
+   pursuit) — for $0.90 of one-time cost across 6.7 hours.
+2. **Frame and audio retrieval are roughly neutral on this query set** — they add a
+   little hit@5 noise-vs-recall churn but no net precision. The label-bootstrap bias
+   is the honest caveat (no query here *requires* frame-only evidence), so
+   [default.yaml](configs/default.yaml) keeps them for open-vocabulary visual
+   queries; the [recommended config](configs/recommended.yaml) turns them off for
+   this workload and says why.
+3. **Verification buys abstention.** Every unverified config answers the six trap
+   queries with confident nonsense (0/6); the recommended config refuses all six
+   correctly — and reaches the best hit@1 — at ~13s and 1.4 cents per query. Its
+   price is three false abstains on hard answerable queries. In an evidence-review
+   setting we take that trade, and the table lets a reader take the other side.
+4. **The eval corrected itself twice.** It caught the labels being wrong in the
+   system's favor once (an unlabeled second vehicle fire the system outranked), and
+   the corpus expansion flipped two labels (Miranda, sobriety) that re-verification
+   caught. An eval that never catches its own labels is not being run hard enough.
 
-### Failure taxonomy (answerable-query misses, recommended config)
+### Failure taxonomy (recommended config, answerable-query misses)
 
 | Class | Count | Example |
 |---|---|---|
-| Verifier over-strictness: uniform frame sampling misses the event core in a long span, and a mention-based truth ("officers *discuss*...") gets judged as an unseen event | 3 | fire rejected despite correct retrieval; handcuffing rejected |
-| Span mismatch: right video, candidate lands beside the truth span | 1 | daylight traffic stop found at rank 2+ outside tIoU |
-| Retrieval miss carried upward from lower rungs | 1 | "asleep at a light" discussion never retrieved to top-5 |
+| Verifier over-strictness — uniform frame sampling misses the event core in a long span, or a mention-based truth is judged as an unseen event | 3 | vehicle-fire and crash-scene rejected despite correct retrieval; "officers *discuss*" judged visually |
+| Scene-attribute queries — "at night"/"in daylight" truths sit at video starts; candidates form where evidence mass is, outside tIoU | 2 | night stop, daylight stop |
+| Rank depth — correct video found, right span below rank 5 or beside truth | 4 | medics @3; back-of-car @2; jail threat @2 |
 
-The obvious next fixes, deliberately not rushed before submission: guarantee the
-evidence-peak frame in the verifier's sample (currently uniform), and let
-mention-style queries accept transcript-only verification without frames.
+The obvious next fixes, deliberately not rushed in before submission: guarantee the
+evidence-peak frame in the verifier's sample (currently uniform), let mention-style
+queries accept transcript-only verification, and treat scene-attribute queries as
+filter-first searches rather than similarity searches.

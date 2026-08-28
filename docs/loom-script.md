@@ -43,9 +43,9 @@ uv run c4 search "an officer reads someone their Miranda rights"
   candidates, audit by frames + transcript, document every rejected candidate
   inline (show queries.yaml comments - cuffs being REMOVED, the stay-in-the-car
   exchange).
-- The build-up ladder table: "each row is one config file" - captions double
-  hit@1 for $0.25 of one-time cost; frame/audio retrieval added noise *on this
-  query set* (say the bias caveat out loud); verification buys 3/3 abstention
+- The build-up ladder table: "each row is one config file" - captions lift
+  hit@5 from 0.61 to 0.78 for $0.90 one-time; frame/audio retrieval is neutral *on this
+  query set* (say the bias caveat out loud); verification buys 6/6 abstention
   for ~14s and a cent per query.
 - The best moment: "the eval caught my labels being wrong - the system outranked
   them. Video_11's fire was real and unlabeled. That's how I know the harness
@@ -59,5 +59,5 @@ uv run c4 search "an officer reads someone their Miranda rights"
 - What's deliberately absent: prosody truth (auditing needs listening),
   conformal abstention (needs a bigger labeled set - rule-based tiers today),
   license-plate voting (designed, cited, not built).
-- Cost recap: ~$0.25 to index 2.5 hours, ~a cent per verified query, everything
+- Cost recap: ~$0.90 to index 6.7 hours, ~1.4 cents per verified query, everything
   else local on Apple Silicon.

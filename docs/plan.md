@@ -87,8 +87,27 @@ accuracy; conformal calibration of the abstention threshold from the labeled pai
 *Verify: metrics reproduce across two runs; ablation configs (transcript-only,
 no-verify) run.*
 
-**12. Scale + polish** — index the full chosen subset (~10–15 h), re-run eval,
-ablation table into README, cost/time actuals, Loom script outline.
+**12. Finish (compressed — supersedes the original scale phase).** Phases 0–11
+landed; what remains, in order:
+
+1. *Ingest the 10 shortest videos* (~2.5 h footage), unattended, caches resume
+   on failure. Produces real per-stage time and per-video caption cost.
+2. *Config + telemetry*: per-retriever enable flags and funnel constants into
+   YAML (each ablation row = one config file = the hotswap demo); every
+   search/eval run logs per-stage wall time and summed API cost to
+   `eval/results-<timestamp>.json`. README claims softened to match what is
+   built (no plate voting, rule-based abstention).
+3. *Labels*: scanner -> audit sheet -> human tick-through (~15 min) ->
+   ~15 queries (the challenge's six, ~6 hard, 3 distractor-seeded no-answer).
+   Expanding later is another audit pass + eval rerun, so start small.
+4. *Eval as a build-up ladder with price tags*: five config rungs
+   (transcripts-only -> +captions -> +frames/objects -> +audio/arousal/motion/
+   clock -> +verification), each reporting P@1 / Hit@5 / abstention /
+   false-abstain / seconds-per-query / dollars-per-query — what each
+   ingredient bought and what it cost. Plus an evidence-attribution table
+   (which extractor won each query type) and a failure taxonomy
+   (retrieval miss / span boundary / verifier error).
+5. *README results + Loom script draft.*
 
 ## Scope decisions
 

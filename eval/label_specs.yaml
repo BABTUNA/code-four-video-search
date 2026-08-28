@@ -22,7 +22,7 @@ specs:
   - query: someone raises their voice
     type: cross_modal
     patterns: ["raised voice", "shout", "yell", "scream"]
-    scan: [caption, vocal_arousal, audio_window]
+    scan: [caption, audio_window]
   - query: a field sobriety test is conducted
     type: cross_modal
     patterns: ["sobriety", "one leg", "walk and turn", "follow my (pen|finger)"]

@@ -1,8 +1,8 @@
-# Ablation rung 2: + VLM captions (the vocabulary-we-control index).
+# Ablation rung 2: + VLM chunk captions.
 data_dir: data
 retrieval:
-  modalities: [transcript, speaker_turn, caption]
+  modalities: [transcript, caption]
   frames: false
   audio: false
-planner: {enabled: true, model: google/gemini-3.5-flash-lite}
+planner: {enabled: true}
 verifier: {enabled: false}

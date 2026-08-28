@@ -1,7 +1,7 @@
-# Ablation rung 3: + frame embeddings, objects, scenes, on-screen clock.
+# Ablation rung 3: + frame embeddings, objects, scenes, overlay clock.
 data_dir: data
 retrieval:
-  modalities: [transcript, speaker_turn, caption, frame, object, scene, wall_clock]
+  modalities: [transcript, caption, frame, object, scene, wall_clock]
   audio: false
-planner: {enabled: true, model: google/gemini-3.5-flash-lite}
+planner: {enabled: true}
 verifier: {enabled: false}

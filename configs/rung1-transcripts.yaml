@@ -1,9 +1,8 @@
-# Ablation rung 1: transcript search only - the "what deployed bodycam
-# tooling does" baseline. No visual/audio arms, no verification.
+# Ablation rung 1: transcripts only - the "what deployed tooling does" baseline.
 data_dir: data
 retrieval:
-  modalities: [transcript, speaker_turn]
+  modalities: [transcript]
   frames: false
   audio: false
-planner: {enabled: true, model: google/gemini-3.5-flash-lite}
+planner: {enabled: true}
 verifier: {enabled: false}

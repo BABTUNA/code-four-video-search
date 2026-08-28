@@ -1,25 +1,82 @@
-# Labeled query set. Truth spans are proposed by eval/label_bootstrap.py and
-# human-audited before use. Starter entries below predate the scaled corpus
-# and are replaced by the audit pass.
+# Labeled query set over the 10-video (~2.5 h) corpus.
+#
+# Truth spans were proposed by the corpus scan (eval/label_bootstrap.py) and
+# audited by reviewing extracted frames plus transcript context with speaker
+# roles - not by real-time watching. Prosody queries ("raises their voice")
+# are deliberately absent: auditing them requires listening, and unverifiable
+# truth is worse than fewer queries. no_answer queries are seeded with real
+# distractors present in the corpus (noted inline).
+
 queries:
   - query: officer orders the driver to step out of the vehicle
     type: direct
     truth:
-      - video: clip
-        start: 73
-        end: 106
-  - query: officer asks the driver to roll down the window
+      - {video: video_16, start: 176, end: 196}   # "step out the car" order
+      - {video: video_16, start: 278, end: 294}   # "step out for me real quick"
+      - {video: video_29, start: 4, end: 24}      # "able to step out with me?"
+    # audited and rejected: video_19 96s (officer says the driver should STAY
+    # in the car); video_18 182s (civilian offers to step outside himself).
+
+  - query: officer asks the driver to do field sobriety exercises
     type: direct
     truth:
-      - video: clip
-        start: 50
-        end: 56
-  - query: a vehicle stopped in a drive-thru lane at night
+      - {video: video_29, start: 188, end: 202}
+      - {video: video_29, start: 270, end: 302}
+
+  - query: officer threatens to take someone to jail
+    type: direct
+    truth:
+      - {video: video_18, start: 144, end: 168}
+
+  - query: officer explains the bail amount and court date
+    type: direct
+    truth:
+      - {video: video_19, start: 428, end: 452}
+
+  - query: officers discuss finding a driver asleep at a traffic light
+    type: direct
+    truth:
+      - {video: video_29, start: 172, end: 192}
+
+  - query: a person is being handcuffed
     type: cross_modal
     truth:
-      - video: clip
-        start: 22
-        end: 49
+      - {video: video_16, start: 185, end: 250}   # frames: hands behind back at car door
+      - {video: video_19, start: 42, end: 80}     # arrest, hands brought back
+      - {video: video_22, start: 224, end: 250}   # frames: officer cuffing seated person
+    # audited and rejected: video_16 900-950 (cuffs being REMOVED); video_18
+    # 152s (threat of handcuffs, none applied).
+
+  - query: a vehicle stopped by police at night
+    type: cross_modal
+    truth:
+      - {video: video_29, start: 0, end: 30}      # frames: 23:41 overlay, flashlight, truck
+    # audited and rejected: four daylight stops the scan proposed.
+
+  - query: firefighters respond to a vehicle fire at night
+    type: cross_modal
+    truth:
+      - {video: video_12, start: 90, end: 320}    # frames: engine on scene, turnout gear
+
+  - query: an officer conducts a traffic stop in daylight
+    type: cross_modal
+    truth:
+      - {video: video_19, start: 0, end: 60}
+      - {video: video_16, start: 0, end: 90}
+
+  - query: an officer reads someone their Miranda rights
+    type: no_answer
+    truth: []
+    # distractor: video_19 443s mentions hiring an attorney and a court date -
+    # no rights reading; verified corpus-wide (no "remain silent"/"Miranda").
+
   - query: a gunshot is fired
     type: no_answer
     truth: []
+    # verified: zero PANNs gunshot tags, zero transcript/caption mentions.
+
+  - query: a police K-9 searches a vehicle
+    type: no_answer
+    truth: []
+    # distractor: video_12 has real dogs discussed and tagged by PANNs - they
+    # are pets at the vehicle-fire scene, not a K-9 unit.

@@ -1,4 +1,4 @@
-# Ablation rung 4: + audio events, arousal, motion - all indexes, unverified.
+# Ablation rung 4: + audio events, arousal, motion - all indexes, no verifier.
 data_dir: data
-planner: {enabled: true, model: google/gemini-3.5-flash-lite}
+planner: {enabled: true}
 verifier: {enabled: false}

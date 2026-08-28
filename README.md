@@ -131,6 +131,11 @@ Conformal calibration is a future improvement that requires a larger labeled set
 
 The full operational specification is in [docs/pipeline.md](docs/pipeline.md).
 
+![Code Four system architecture](docs/figures/system-architecture.drawio.png)
+
+*Offline ingestion creates a shared evidence index. Online search retrieves and
+combines evidence before a VLM verifies the strongest candidate segments.*
+
 ### 4.1 Modality extraction
 
 Each extractor emits the same timestamped record type:
@@ -146,17 +151,6 @@ Doc(
 )
 ```
 
-```mermaid
-flowchart TD
-    V[video.mp4] --> T["ASR (Whisper)<br/>word spans"]
-    V --> C["VLM captioner<br/>5-min chunks"]
-    V --> E["SigLIP 2 frames<br/>0.5 fps instants"]
-    V --> A["CLAP + PANNs<br/>audio-event spans"]
-    V --> D["diarizer / detector /<br/>arousal / motion / clock OCR"]
-    T & C & E & A & D --> R["Doc {video, t_start, t_end, modality, text}<br/>one absolute timeline, per-modality granularity"]
-    R --> DB[(doc store + vector index)]
-```
-
 Each modality keeps its natural time scale. A quote may last two seconds while a
 sampled frame represents one instant. Evidence is aligned during search instead of
 being forced into fixed chunks at ingest.
@@ -166,17 +160,6 @@ model does not change the `Doc` contract or downstream search code. Stage cachin
 also allows one extractor to rerun without repeating the whole ingest.
 
 ### 4.2 Semantic search
-
-```mermaid
-flowchart LR
-    Q[query] --> P["LLM planner:<br/>≤4 sub-queries,<br/>negations extracted,<br/>lexical variants"]
-    P --> R["BM25 + dense + frame + audio retrieval<br/>top-100 per list (recall)"]
-    R --> F["RRF fusion, k=60<br/>(ranks, never scores)"]
-    F --> X["cross-encoder rerank<br/>→ top ~20"]
-    X --> G["temporal merge:<br/>smoothed score tracks,<br/>AND-intersection of required streams"]
-    G --> Vf["VLM verifier: real frames + transcript<br/>describe first, then judge<br/>→ confirm / reject / unclear"]
-    Vf --> O["evidence tiers,<br/>or no confident match"]
-```
 
 The planner creates up to four searchable clauses, modality hints, lexical variants,
 scene filters, and negative constraints. The original query always remains a retrieval

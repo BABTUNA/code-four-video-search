@@ -82,6 +82,13 @@ class Store:
             results.append((row["doc_id"], doc))
         return results
 
+    def update_extra(self, doc_id: int, extra: dict) -> None:
+        self.db.execute(
+            "UPDATE docs SET extra = ? WHERE doc_id = ?",
+            (json.dumps(extra), doc_id),
+        )
+        self.db.commit()
+
     def save_vectors(self, name: str, doc_ids: list[int], vectors: np.ndarray) -> None:
         if len(doc_ids) != len(vectors):
             raise ValueError("doc_ids and vectors must align")

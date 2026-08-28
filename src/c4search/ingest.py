@@ -3,10 +3,27 @@ from dataclasses import asdict
 from pathlib import Path
 
 from c4search.cache import StageCache
+from c4search.extractors.diarize import speaker_for
 from c4search.media import MediaAssets, prepare, probe
 from c4search.models import Doc
 from c4search.registry import build_extractors
 from c4search.store import Store
+
+
+def annotate_speakers(store: Store, video_id: str) -> None:
+    """Copy speaker id and role onto each transcript Doc by turn overlap."""
+    turns = [
+        {"start": doc.t_start, "end": doc.t_end, **doc.extra}
+        for _, doc in store.docs(video_id, "speaker_turn")
+    ]
+    if not turns:
+        return
+    for doc_id, doc in store.docs(video_id, "transcript"):
+        turn = speaker_for(doc.t_start, doc.t_end, turns)
+        if turn:
+            store.update_extra(doc_id, doc.extra | {
+                "speaker": turn["speaker"], "role": turn["role"],
+            })
 
 
 def load_assets(workdir: Path, frame_fps: float) -> MediaAssets:
@@ -56,4 +73,6 @@ def ingest_video(source: Path, config: dict) -> dict[str, int]:
             store.delete_docs(video.video_id, modality)
         store.add_docs(docs)
         counts[extractor.name] = len(docs)
+
+    annotate_speakers(store, video.video_id)
     return counts

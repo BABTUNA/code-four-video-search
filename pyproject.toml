@@ -7,6 +7,7 @@ dependencies = [
     "mlx-whisper>=0.4.3",
     "numpy>=2",
     "pyyaml>=6",
+    "senko>=0.1.0",
     "typer>=0.12",
 ]
 

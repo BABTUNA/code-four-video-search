@@ -8,3 +8,4 @@ data_dir: data
 extractors:
   - impl: transcribe
     model: mlx-community/whisper-large-v3-turbo
+  - impl: diarize

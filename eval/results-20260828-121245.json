@@ -1,0 +1,187 @@
+{
+  "config": "configs/default.yaml",
+  "no_verify": false,
+  "summary": {
+    "queries": 12,
+    "hit@1": 0.333,
+    "hit@5": 0.333,
+    "false_abstain": 2,
+    "abstention_acc": 1.0,
+    "hit@1_direct": 0.6,
+    "hit@1_cross_modal": 0.0,
+    "total_s": 210.4,
+    "total_cost_usd": 0.1588,
+    "s_per_query": 17.5,
+    "cost_per_query_usd": 0.0132
+  },
+  "per_query": [
+    {
+      "query": "officer orders the driver to step out of the vehicle",
+      "kind": "direct",
+      "hit_rank": 1,
+      "abstained": false,
+      "cost_usd": 0.01333,
+      "stage_s": {
+        "plan": 0.0,
+        "retrieve_rerank": 22.34,
+        "merge": 0.0,
+        "verify": 14.2
+      },
+      "total_s": 36.54
+    },
+    {
+      "query": "officer asks the driver to do field sobriety exercises",
+      "kind": "direct",
+      "hit_rank": null,
+      "abstained": true,
+      "cost_usd": 0.01514,
+      "stage_s": {
+        "plan": 0.0,
+        "retrieve_rerank": 1.85,
+        "merge": 0.0,
+        "verify": 15.15
+      },
+      "total_s": 17.0
+    },
+    {
+      "query": "officer threatens to take someone to jail",
+      "kind": "direct",
+      "hit_rank": 1,
+      "abstained": false,
+      "cost_usd": 0.01444,
+      "stage_s": {
+        "plan": 0.0,
+        "retrieve_rerank": 1.65,
+        "merge": 0.0,
+        "verify": 17.59
+      },
+      "total_s": 19.24
+    },
+    {
+      "query": "officer explains the bail amount and court date",
+      "kind": "direct",
+      "hit_rank": 1,
+      "abstained": false,
+      "cost_usd": 0.01581,
+      "stage_s": {
+        "plan": 0.0,
+        "retrieve_rerank": 0.91,
+        "merge": 0.0,
+        "verify": 22.16
+      },
+      "total_s": 23.07
+    },
+    {
+      "query": "officers discuss finding a driver asleep at a traffic light",
+      "kind": "direct",
+      "hit_rank": null,
+      "abstained": true,
+      "cost_usd": 0.00295,
+      "stage_s": {
+        "plan": 0.0,
+        "retrieve_rerank": 2.85,
+        "merge": 0.0,
+        "verify": 3.52
+      },
+      "total_s": 6.37
+    },
+    {
+      "query": "a person is being handcuffed",
+      "kind": "cross_modal",
+      "hit_rank": null,
+      "abstained": false,
+      "cost_usd": 0.01543,
+      "stage_s": {
+        "plan": 0.0,
+        "retrieve_rerank": 0.94,
+        "merge": 0.0,
+        "verify": 18.94
+      },
+      "total_s": 19.88
+    },
+    {
+      "query": "a vehicle stopped by police at night",
+      "kind": "cross_modal",
+      "hit_rank": null,
+      "abstained": false,
+      "cost_usd": 0.00945,
+      "stage_s": {
+        "plan": 0.0,
+        "retrieve_rerank": 1.73,
+        "merge": 0.0,
+        "verify": 8.13
+      },
+      "total_s": 9.86
+    },
+    {
+      "query": "firefighters respond to a vehicle fire at night",
+      "kind": "cross_modal",
+      "hit_rank": null,
+      "abstained": false,
+      "cost_usd": 0.01206,
+      "stage_s": {
+        "plan": 0.0,
+        "retrieve_rerank": 1.7,
+        "merge": 0.0,
+        "verify": 12.68
+      },
+      "total_s": 14.38
+    },
+    {
+      "query": "an officer conducts a traffic stop in daylight",
+      "kind": "cross_modal",
+      "hit_rank": null,
+      "abstained": false,
+      "cost_usd": 0.01371,
+      "stage_s": {
+        "plan": 0.0,
+        "retrieve_rerank": 1.64,
+        "merge": 0.0,
+        "verify": 13.45
+      },
+      "total_s": 15.09
+    },
+    {
+      "query": "an officer reads someone their Miranda rights",
+      "kind": "no_answer",
+      "hit_rank": null,
+      "abstained": true,
+      "cost_usd": 0.01413,
+      "stage_s": {
+        "plan": 0.0,
+        "retrieve_rerank": 1.43,
+        "merge": 0.0,
+        "verify": 15.76
+      },
+      "total_s": 17.19
+    },
+    {
+      "query": "a gunshot is fired",
+      "kind": "no_answer",
+      "hit_rank": null,
+      "abstained": true,
+      "cost_usd": 0.01565,
+      "stage_s": {
+        "plan": 0.0,
+        "retrieve_rerank": 1.24,
+        "merge": 0.0,
+        "verify": 16.16
+      },
+      "total_s": 17.4
+    },
+    {
+      "query": "a police K-9 searches a vehicle",
+      "kind": "no_answer",
+      "hit_rank": null,
+      "abstained": true,
+      "cost_usd": 0.01673,
+      "stage_s": {
+        "plan": 0.0,
+        "retrieve_rerank": 0.96,
+        "merge": 0.0,
+        "verify": 13.45
+      },
+      "total_s": 14.41
+    }
+  ]
+}

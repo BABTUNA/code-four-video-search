@@ -10,10 +10,14 @@ bad plan's damage at added noise.
 from c4search.openrouter import chat_json
 
 # Plan modalities -> Doc modalities they retrieve against. The burned-in
-# clock is on-screen text, so wall_clock rides with visual.
+# clock is on-screen text, so wall_clock rides with visual. Scene docs are
+# deliberately NOT retrieval targets: "outdoors at night" spans are long and
+# match scene words in queries, flooding fusion - scene is a filter
+# (apply_scene_filter) and verifier context, exactly as the design says
+# attribute constraints should be.
 MODALITY_MAP = {
     "speech": ["transcript", "speaker_turn"],
-    "visual": ["frame", "caption", "object", "scene", "wall_clock"],
+    "visual": ["frame", "caption", "object", "wall_clock"],
     "audio": ["audio_window", "audio_tag", "vocal_arousal", "motion"],
     "caption": ["caption"],
 }

@@ -57,6 +57,10 @@ queries:
     type: cross_modal
     truth:
       - {video: video_12, start: 90, end: 320}    # frames: engine on scene, turnout gear
+      - {video: video_11, start: 130, end: 200}   # engine arrives 135s, firefighters operate
+    # video_11 truth was found by the system outranking the original label -
+    # the label scan missed it; frames/captions confirm a burning truck with
+    # fire crews. Labels corrected in the system's favor after re-audit.
 
   - query: an officer conducts a traffic stop in daylight
     type: cross_modal

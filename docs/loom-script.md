@@ -1,63 +1,45 @@
-# Loom walkthrough script (~12-15 min)
+# Loom script (~4 min)
 
-Have ready: the repo README open, a terminal at the repo root, and
-eval/queries.yaml visible in an editor tab.
+Prep: run both queries once beforehand so models are warm (the first run pays
+~20s of loading). Have the terminal and README section 6 ready.
 
-## 1. The one idea (2 min)
+## 0:00 - The idea (30s)
 
-- "Searching hours of bodycam video fails at *finding* moments, not recognizing
-  them - models describe a 30-second clip fine, but existing temporal search hits
-  ~2% F1 on hour-scale video."
-- "So the system is a precision funnel: nine cheap local indexes propose, rank
-  fusion and a cross-encoder narrow, temporal merging forms candidate segments,
-  and a VLM inspects only the finalists - where it's allowed to say no."
-- "Timestamps always come from our own bookkeeping - ASR word times, frame
-  indexes, chunk offsets. No model is ever asked to remember when something
-  happened."
+"Searching hours of bodycam video fails at *finding* moments, not recognizing
+them. So this system has cheap local indexes propose candidates, and a
+vision-language model inspects only the finalists - where it's allowed to say
+no. Timestamps always come from the system's own bookkeeping, never from a
+model's memory."
 
-## 2. Live queries (5 min) - run these, talk over the output
+## 0:30 - Two live queries (90s)
 
 ```
 uv run c4 search "officer orders the driver to step out of the vehicle"
 ```
-- Point at: three trust tiers, the transcript evidence with speaker roles, the
-  wall-clock label from the burned-in overlay OCR.
+Point at: the CONFIRMED tier, transcript quotes with speaker roles, the
+wall-clock label read off the burned-in overlay.
 
 ```
-uv run c4 search "a vehicle stopped by police at night"
+uv run c4 search "a gunshot is fired"
 ```
-- Point at: the planner turning "at night" into a scene *filter* rather than a
-  search term - and why (attribute words flood retrieval; we measured it).
+Point at: no confident match, plus the closest rejected candidate and the
+verifier's stated reason. Line: "in evidence review, a confident empty answer
+beats a confident wrong one."
 
-```
-uv run c4 search "an officer reads someone their Miranda rights"
-```
-- The abstention story: "attorney" and "court date" are spoken in this corpus,
-  but no rights reading exists - retrieval proposes, the verifier refuses, and
-  the output shows the closest rejected candidate with the stated reason.
-  "In an evidence context, a confident empty answer beats a confident wrong one."
+## 2:00 - The numbers (90s)
 
-## 3. The evaluation (4 min) - README section 6 on screen
+README section 6 table on screen:
+- "Each row is one config file - that's the hotswappability story."
+- "Captions were the biggest single win, for ninety cents across the corpus."
+- "Verification refuses all six trap queries that every unverified config
+  answered with confident nonsense."
+- "The eval caught my own labels being wrong twice - an unlabeled second
+  vehicle fire the system outranked, and two labels that flipped when the
+  corpus doubled. That's how I know the harness is real."
 
-- How labels were made without a labeled dataset: scan our own indexes for
-  candidates, audit by frames + transcript, document every rejected candidate
-  inline (show queries.yaml comments - cuffs being REMOVED, the stay-in-the-car
-  exchange).
-- The build-up ladder table: "each row is one config file" - captions lift
-  hit@5 from 0.67 to 0.89 for $0.90 one-time; frame/audio retrieval is neutral *on this
-  query set* (say the bias caveat out loud); verification buys 6/6 abstention
-  for ~14s and a cent per query.
-- The best moment: "the eval caught my labels being wrong - the system outranked
-  them. Video_11's fire was real and unlabeled. That's how I know the harness
-  works."
+## 3:30 - Limits (30s)
 
-## 4. Tradeoffs and honesty (2 min)
-
-- What I'd do next (README failure taxonomy): peak-frame guarantee in the
-  verifier sample; transcript-only verification for mention-style queries;
-  frame-only eval queries to remove the label bias.
-- What's deliberately absent: prosody truth (auditing needs listening),
-  conformal abstention (needs a bigger labeled set - rule-based tiers today),
-  license-plate voting (designed, cited, not built).
-- Cost recap: ~$0.90 to index 6.7 hours, ~1.4 cents per verified query, everything
-  else local on Apple Silicon.
+"Honest limits: the label method is biased toward text-answerable queries,
+one false abstain remains, and prosody queries are unlabeled on purpose -
+auditing them requires listening. The README has the full architecture,
+research grounding, failure taxonomy, and every rejected label."

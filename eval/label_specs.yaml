@@ -27,3 +27,52 @@ specs:
     type: cross_modal
     patterns: ["sobriety", "one leg", "walk and turn", "follow my (pen|finger)"]
     scan: [transcript, caption]
+  # --- expansion round: broad sweep, best survivors become queries ---
+  - query: officers pursue someone on foot
+    type: cross_modal
+    patterns: ["foot pursuit", "chase", "running from", "get on the ground", "stop running"]
+    scan: [transcript, caption]
+  - query: an ambulance or medics are called to the scene
+    type: direct
+    patterns: ["ambulance", "medics?", "paramedic", "fire and rescue", "EMS"]
+    scan: [transcript, caption]
+  - query: a vehicle is towed or impounded
+    type: direct
+    patterns: ["tow(ed|ing)?", "impound"]
+    scan: [transcript, caption]
+  - query: an officer searches a vehicle
+    type: cross_modal
+    patterns: ["search(ing)? (the|your|his|her) (car|vehicle|truck)", "consent to search"]
+    scan: [transcript, caption]
+  - query: someone is placed in the back of a patrol car
+    type: cross_modal
+    patterns: ["back ?seat", "in the back of", "watch your head"]
+    scan: [transcript, caption]
+  - query: an officer asks about drugs or alcohol
+    type: direct
+    patterns: ["anything to drink", "how much have you had", "drugs", "marijuana", "narcotic"]
+    scan: [transcript]
+  - query: a breathalyzer or breath test is given
+    type: direct
+    patterns: ["breathalyzer", "breath test", "blow into", "point (zero|two|o)"]
+    scan: [transcript, caption]
+  - query: an officer talks to dispatch on the radio
+    type: direct
+    patterns: ["dispatch", "copy", "10-4", "requesting backup", "run a plate"]
+    scan: [transcript]
+  - query: a weapon is found or discussed
+    type: cross_modal
+    patterns: ["gun", "knife", "weapon", "firearm", "pistol"]
+    scan: [transcript, caption, object]
+  - query: someone refuses to identify themselves
+    type: direct
+    patterns: ["refus\\w+ to (identify|give)", "not giving you my (name|ID)", "don't have to (identify|tell you)"]
+    scan: [transcript]
+  - query: a car crash or collision scene
+    type: cross_modal
+    patterns: ["crash", "collision", "rear.?ended", "accident scene", "airbag"]
+    scan: [transcript, caption]
+  - query: an officer speaks spanish with someone
+    type: direct
+    patterns: ["habla", "espanol", "senor", "como te llamas"]
+    scan: [transcript]

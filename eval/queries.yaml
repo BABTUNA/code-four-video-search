@@ -1,27 +1,37 @@
-# Labeled query set over the 10-video (~2.5 h) corpus.
+# Labeled query set over the 20-video (6.67 h) corpus: 18 answerable queries,
+# 6 no-answer traps.
 #
 # Truth spans were proposed by the corpus scan (eval/label_bootstrap.py) and
-# audited by reviewing extracted frames plus transcript context with speaker
-# roles - not by real-time watching. Prosody queries ("raises their voice")
-# are deliberately absent: auditing them requires listening, and unverifiable
-# truth is worse than fewer queries. no_answer queries are seeded with real
-# distractors present in the corpus (noted inline).
+# audited by frame extraction plus transcript context with speaker roles - not
+# real-time watching. Prosody queries are deliberately absent (auditing them
+# requires listening). Two labels changed when the corpus grew from 10 to 20
+# videos - the exact hazard the literature warns about: Miranda readings now
+# exist (was a no-answer trap), and full field sobriety tests are now
+# conducted (the query had been reworded to "asks" when none were).
+# Candidates rejected during audit are documented inline.
 
 queries:
   - query: officer orders the driver to step out of the vehicle
     type: direct
     truth:
-      - {video: video_16, start: 176, end: 196}   # "step out the car" order
-      - {video: video_16, start: 278, end: 294}   # "step out for me real quick"
-      - {video: video_29, start: 4, end: 24}      # "able to step out with me?"
-    # audited and rejected: video_19 96s (officer says the driver should STAY
-    # in the car); video_18 182s (civilian offers to step outside himself).
+      - {video: video_16, start: 172, end: 190}
+      - {video: video_16, start: 276, end: 298}
+      - {video: video_29, start: 1, end: 18}
+      - {video: video_38, start: 122, end: 143}
+    # rejected: video_19 96s (driver told to STAY in the car), video_18 182s
+    # (civilian offers to step outside himself), video_29 recap/noise matches.
 
-  - query: officer asks the driver to do field sobriety exercises
-    type: direct
+  - query: a field sobriety test is conducted
+    type: cross_modal
     truth:
-      - {video: video_29, start: 188, end: 202}
-      - {video: video_29, start: 270, end: 302}
+      - {video: video_20, start: 242, end: 473}    # HGN test
+      - {video: video_20, start: 592, end: 830}
+      - {video: video_38, start: 227, end: 428}
+      - {video: video_38, start: 507, end: 660}    # walk-and-turn
+      - {video: video_38, start: 770, end: 971}    # one-leg stand
+      - {video: video_4, start: 1177, end: 1194}
+    # near-miss distractors kept out of truth: video_29 186-205 and 270-306,
+    # where exercises are offered twice and refused ("Absolutely not").
 
   - query: officer threatens to take someone to jail
     type: direct
@@ -41,26 +51,32 @@ queries:
   - query: a person is being handcuffed
     type: cross_modal
     truth:
-      - {video: video_16, start: 185, end: 250}   # frames: hands behind back at car door
-      - {video: video_19, start: 42, end: 80}     # arrest, hands brought back
-      - {video: video_22, start: 224, end: 250}   # frames: officer cuffing seated person
-    # audited and rejected: video_16 900-950 (cuffs being REMOVED); video_18
-    # 152s (threat of handcuffs, none applied).
+      - {video: video_13, start: 25, end: 157}
+      - {video: video_16, start: 185, end: 250}    # frames: hands behind back
+      - {video: video_19, start: 42, end: 80}
+      - {video: video_20, start: 289, end: 308}
+      - {video: video_20, start: 814, end: 1129}
+      - {video: video_22, start: 224, end: 250}    # frames: cuffing on grass
+      - {video: video_28, start: 265, end: 530}    # cuffed state confirmed by escort captions
+      - {video: video_35, start: 22, end: 198}     # takedown after foot pursuit
+      - {video: video_38, start: 1259, end: 1378}
+      - {video: video_4, start: 292, end: 308}
+    # rejected: video_16 900-950 (cuffs REMOVED), video_18 152s (threat only),
+    # aftermath/escort/back-seat "handcuffed person" states, and video_24
+    # (frame checks at 200s/208s showed terrain and a golf cart, not the act).
 
   - query: a vehicle stopped by police at night
     type: cross_modal
     truth:
-      - {video: video_29, start: 0, end: 30}      # frames: 23:41 overlay, flashlight, truck
-    # audited and rejected: four daylight stops the scan proposed.
+      - {video: video_20, start: 0, end: 26}       # frames: 03:52 AM overlay
+      - {video: video_29, start: 0, end: 30}       # frames: 23:41 overlay
+    # rejected: six daylight stops the scan proposed.
 
   - query: firefighters respond to a vehicle fire at night
     type: cross_modal
     truth:
-      - {video: video_12, start: 90, end: 320}    # frames: engine on scene, turnout gear
-      - {video: video_11, start: 130, end: 200}   # engine arrives 135s, firefighters operate
-    # video_11 truth was found by the system outranking the original label -
-    # the label scan missed it; frames/captions confirm a burning truck with
-    # fire crews. Labels corrected in the system's favor after re-audit.
+      - {video: video_12, start: 90, end: 320}
+      - {video: video_11, start: 130, end: 200}
 
   - query: an officer conducts a traffic stop in daylight
     type: cross_modal
@@ -69,18 +85,130 @@ queries:
       - {video: video_16, start: 0, end: 90}
 
   - query: an officer reads someone their Miranda rights
-    type: no_answer
-    truth: []
-    # distractor: video_19 443s mentions hiring an attorney and a court date -
-    # no rights reading; verified corpus-wide (no "remain silent"/"Miranda").
+    type: direct
+    truth:
+      - {video: video_13, start: 565, end: 595}
+      - {video: video_38, start: 1105, end: 1130}
+    # was a no-answer trap on the 10-video corpus; the added videos contain
+    # real readings. rejected distractors: video_19 443s (attorney/court talk),
+    # video_20 1147s (attorney mention, no rights reading).
+
+  - query: officers pursue someone on foot
+    type: cross_modal
+    truth:
+      - {video: video_35, start: 0, end: 45}
+    # rejected: after-the-fact retellings ("I just chased after that guy"),
+    # vehicle pursuits, and a driver named Chase matching the pattern.
+
+  - query: someone is placed in the back of a patrol car
+    type: cross_modal
+    truth:
+      - {video: video_28, start: 47, end: 70}
+      - {video: video_28, start: 746, end: 763}    # "watch your head"
+      - {video: video_38, start: 1437, end: 1498}
+    # rejected: interior views of someone already seated in the back.
+
+  - query: an officer asks about drugs or alcohol
+    type: direct
+    truth:
+      - {video: video_36, start: 796, end: 815}
+      - {video: video_36, start: 1352, end: 1370}
+      - {video: video_38, start: 1172, end: 1190}
+    # rejected: possession statements and jail warnings that mention drugs
+    # without asking.
+
+  - query: a breathalyzer test is discussed or given
+    type: direct
+    truth:
+      - {video: video_20, start: 1017, end: 1034}
+      - {video: video_20, start: 1248, end: 1268}
+      - {video: video_36, start: 1302, end: 1403}
+    # rejected: "at this point" substring matches.
+
+  - query: a weapon is found or discussed
+    type: cross_modal
+    truth:
+      - {video: video_13, start: 144, end: 161}
+      - {video: video_13, start: 218, end: 235}
+      - {video: video_16, start: 236, end: 254}
+      - {video: video_19, start: 37, end: 71}
+      - {video: video_19, start: 827, end: 845}
+      - {video: video_22, start: 170, end: 230}
+      - {video: video_23, start: 43, end: 105}
+      - {video: video_23, start: 480, end: 540}
+      - {video: video_23, start: 574, end: 593}
+      - {video: video_24, start: 1363, end: 1392}
+      - {video: video_29, start: 323, end: 347}
+      - {video: video_29, start: 376, end: 395}
+      - {video: video_9, start: 13, end: 33}
+      - {video: video_9, start: 730, end: 748}
+      - {video: video_9, start: 932, end: 970}
+    # rejected: object-detector-only knife hits (unverified at night) and one
+    # garbled transcript line.
+
+  - query: a car crash or collision scene
+    type: cross_modal
+    truth:
+      - {video: video_27, start: 386, end: 404}    # airbags + EMS corroborate
+    # rejected: "crash at" as slang for staying somewhere, and video_39's
+    # pursuit end (frame check: clean stop on a bridge, no collision).
+
+  - query: an ambulance or medics are called to the scene
+    type: direct
+    truth:
+      - {video: video_11, start: 201, end: 308}
+      - {video: video_12, start: 97, end: 114}
+      - {video: video_13, start: 1283, end: 1301}
+      - {video: video_27, start: 329, end: 348}
+      - {video: video_27, start: 629, end: 647}
+      - {video: video_27, start: 824, end: 844}
+    # rejected: generic "medical questions"/"problems"/"items" noise matches.
+
+  - query: a vehicle is towed or impounded
+    type: direct
+    truth:
+      - {video: video_12, start: 505, end: 522}
+      - {video: video_16, start: 351, end: 369}
+      - {video: video_16, start: 466, end: 483}
+      - {video: video_16, start: 580, end: 597}
+      - {video: video_19, start: 174, end: 258}
+      - {video: video_19, start: 345, end: 423}
+      - {video: video_19, start: 564, end: 618}
+      - {video: video_20, start: 1268, end: 1284}
+      - {video: video_27, start: 592, end: 920}    # dashcam follows tow truck
+    # rejected: dozens of "toward(s)" substring matches.
+
+  # ---- no-answer traps: correct output is nothing ----
 
   - query: a gunshot is fired
     type: no_answer
     truth: []
-    # verified: zero PANNs gunshot tags, zero transcript/caption mentions.
+    # distractor: video_24 1168s "I'm glad it wasn't shots fired" - a negative
+    # mention; zero PANNs gunshot tags corpus-wide.
 
   - query: a police K-9 searches a vehicle
     type: no_answer
     truth: []
-    # distractor: video_12 has real dogs discussed and tagged by PANNs - they
-    # are pets at the vehicle-fire scene, not a K-9 unit.
+    # distractor: real dogs discussed and PANNs-tagged in videos 11/12 - pets
+    # at the vehicle-fire scene, not a K-9 unit.
+
+  - query: an officer deploys a taser
+    type: no_answer
+    truth: []
+    # distractor: weapons are discussed throughout; "taser" occurs nowhere.
+
+  - query: a house is on fire
+    type: no_answer
+    truth: []
+    # distractor: two VEHICLE fires (videos 11 and 12); no structure fire.
+
+  - query: an officer performs CPR
+    type: no_answer
+    truth: []
+    # distractor: medics and ambulances are present in five videos; no CPR or
+    # chest compressions anywhere.
+
+  - query: a school bus is visible
+    type: no_answer
+    truth: []
+    # pure absence: zero mentions or detections corpus-wide.

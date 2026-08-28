@@ -1,9 +1,10 @@
 # Pipeline: extraction and querying, end to end
 
 The operational blueprint. [design.md](design.md) carries the rationale,
-[research.md](research.md) the literature. Everything below runs locally on Apple
-Silicon; **ingest costs $0 in API calls**, and a typical query costs $0 too — the paid
-API is an escalation path, not a dependency.
+[research.md](research.md) the literature. Every stage runs locally on Apple Silicon
+except chunk captioning, which uses a flash-tier VLM via OpenRouter (~$0.15–0.35 per
+video-hour) — a deliberate trade: a local 3B captioner would make ingest ~3x slower to
+save single-digit dollars, and the captioner is a one-line config swap either way.
 
 ---
 
@@ -19,11 +20,11 @@ video.mp4
   └─ ffmpeg (VideoToolbox): 480p proxy, 16kHz mono wav, frames @0.5fps, loudness (ebur128)
        ├─ AUDIO PIPE (CPU/ANE)                    ├─ VISION PIPE (GPU/MPS)
        │  transcriber   mlx-whisper turbo         │  frame embedder  SigLIP 2 @0.5fps
-       │  diarizer      senko (CoreML)            │  captioner       Qwen2.5-VL-3B (mlx-vlm)
-       │  audio events  CLAP + PANNs CNN14        │  detector        YOLO-World @0.5fps
-       │  vocal arousal wav2vec2 (audeering)      │  scene attrs     SigLIP zero-shot + luma
-       │                                          │  clock OCR       ocrmac on overlay crop
-       └─ motion        optical-flow magnitude series (CPU)
+       │  diarizer      senko (CoreML)            │  detector        YOLO-World @0.5fps
+       │  audio events  CLAP + PANNs CNN14        │  scene attrs     SigLIP zero-shot + luma
+       │  vocal arousal wav2vec2 (audeering)      │  clock OCR       ocrmac on overlay crop
+       ├─ motion        optical-flow magnitude series (CPU)
+       └─ captioner     flash-tier VLM via OpenRouter, 5-min 480p chunks (the one API stage)
                                 ↓
                 Doc store (SQLite) + vector arrays, one shared timeline
 ```
@@ -32,7 +33,7 @@ video.mp4
 |---|---|---|---|
 | Transcriber | `mlx-whisper` large-v3-turbo (~10x realtime) | word-timestamped utterances | dominant signal; hardened with the Whisper paper's own thresholds (compression > 2.4, logprob < −1.0, no-speech > 0.6), VAD gating, and a stock-hallucination blocklist — hallucinated text matching a query is a precision disaster |
 | Diarizer | `senko` (CoreML; ~8s per audio-hour), pyannote fallback | speaker turns | "who said it" — officer vs civilian, mapped heuristically (mic proximity, speech share); powers queries like "civilian says X" |
-| Captioner | **Qwen2.5-VL-3B 4-bit via `mlx-vlm`**, 1 frame/10s, conservative "describe only what is clearly visible" prompt | scene descriptions | the index whose vocabulary we control (policing ontology); local VLM captions-as-index has direct precedent (NarVid, VideoAgent found caption source matters less than expected) — and it removes the only paid ingest stage |
+| Captioner | flash-tier VLM (OpenRouter), one call per 5-min 480p chunk at low media resolution, transcript in-prompt as temporal anchor | structured scene/event descriptions with chunk-local times we offset to absolute | the index whose vocabulary we control (policing ontology — "handcuffing" findable though never spoken); true video input captures temporal verbs a frame captioner misses; ~$0.15–0.35/video-hour, and swappable to a local VLM (Qwen2.5-VL via mlx-vlm) at ~3x ingest time if API-free ingest ever matters |
 | Frame embedder | SigLIP 2 @0.5fps (MPS) | image vectors | catches what captions omit; frame-level is the evidence-backed baseline for continuous footage |
 | Scene attributes | same SigLIP embeddings, zero-shot prompts + mean-luma check | day/night, indoor/outdoor tags | answers "at night" as a *filter*, nearly free — reuses existing vectors |
 | Audio events | CLAP (open-vocab) + PANNs CNN14 (fixed AudioSet head) | event spans: shouting, siren, gunshot, glass... | prosody is invisible to transcripts; PANNs' supervised head is more reliable than CLAP prompts on the high-stakes fixed vocabulary (gunshot/siren/scream), so both run |
@@ -42,9 +43,10 @@ video.mp4
 | Motion | optical-flow magnitude per second (OpenCV, CPU) | high-motion tags | foot pursuits/struggles from camera motion — precedent in bodycam activity recognition (arXiv 1904.09062), no model needed |
 | Loudness | ffmpeg ebur128 | loudness envelope | free ranking prior for shouting/impacts |
 
-Budget: ~35–65 min per video-hour, dominated by captioning; audio and vision pipes
-contend little and run concurrently, so effective wall ≈ max(pipes) ≈ 30–45 min/hour.
-Indexing 12 hours overnight is comfortable. API cost: **$0**.
+Budget: ~10–15 min of local compute per video-hour (whisper ~5 min, embeddings ~2,
+the rest small), with captioning running concurrently as async API calls; audio and
+vision pipes contend little. Indexing 12 hours is an afternoon, not overnight. API
+cost: ~$0.15–0.35 per video-hour — $2–5 for the whole corpus subset.
 
 ---
 

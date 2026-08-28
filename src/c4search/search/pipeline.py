@@ -128,6 +128,10 @@ def run_search(query: str, store: Store, config: dict, verify: bool = True,
                 candidate, elements, store, media_info(store, candidate.video_id))
             results.append({"candidate": candidate, "verdict": verdict})
         telemetry["cost_usd"] += verifier.cost_usd
+        # Verified evidence outranks unverified: a confirmed match below an
+        # inconclusive one should be presented (and scored) first.
+        tier_order = {"confirmed": 0, "candidate": 1, "rejected": 2}
+        results.sort(key=lambda r: tier_order.get(r["verdict"]["tier"], 1))
     else:
         results = [{"candidate": c, "verdict": {"tier": "unverified"}}
                    for c in candidates]

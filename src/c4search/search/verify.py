@@ -24,6 +24,14 @@ First, describe what is actually visible in the frames, in 2-3 sentences.
 Then decide for each required element whether the frames/transcript show it.
 Do not assume the segment matches; wrong candidates are common.
 
+Judging rules:
+- The transcript is evidence. An event the transcript supports counts as
+  present even when these sampled frames do not show it - frames that
+  CONTRADICT the transcript are different from frames that merely miss the
+  moment.
+- For queries about what people SAY or DISCUSS, the transcript alone can
+  fully satisfy the query.
+
 Required elements:
 {elements}
 
@@ -65,7 +73,11 @@ def parse_verdict(output: str) -> dict | None:
 
 
 def pick_frames(frames_dir: Path, frame_fps: float, t_start: float,
-                t_end: float, count: int = 8) -> list[Path]:
+                t_end: float, count: int = 8,
+                focus_times: list[float] = ()) -> list[Path]:
+    """Sample frames across the span, guaranteeing frames nearest the
+    strongest evidence - uniform sampling alone misses the event core in a
+    long span."""
     paths = sorted(frames_dir.glob("*.jpg"))
     inside = [
         path for path in paths
@@ -73,8 +85,17 @@ def pick_frames(frames_dir: Path, frame_fps: float, t_start: float,
     ]
     if len(inside) <= count:
         return inside
-    step = len(inside) / count
-    return [inside[int(i * step)] for i in range(count)]
+
+    picked = []
+    for focus in list(focus_times)[:count // 2]:
+        nearest = min(inside, key=lambda p: abs((int(p.stem) - 1) / frame_fps - focus))
+        if nearest not in picked:
+            picked.append(nearest)
+    remaining = [path for path in inside if path not in picked]
+    fill = count - len(picked)
+    step = len(remaining) / fill
+    picked.extend(remaining[int(i * step)] for i in range(fill))
+    return sorted(picked)
 
 
 def adjust_for_darkness(verdict: dict, night: bool) -> dict:
@@ -135,9 +156,13 @@ class Verifier:
     def verify(self, candidate: Candidate, elements: list[str],
                store: Store, media: dict) -> dict:
         """Returns the verdict plus a tier: confirmed / candidate / rejected."""
+        evidence_docs = store.get_docs(candidate.evidence[:4])
+        focus_times = [
+            (doc.t_start + doc.t_end) / 2 for doc in evidence_docs.values()
+        ]
         frame_paths = pick_frames(
             Path(media["frames_dir"]), media["frame_fps"],
-            candidate.t_start, candidate.t_end, self.max_frames)
+            candidate.t_start, candidate.t_end, self.max_frames, focus_times)
         transcript = "\n".join(
             f"[{doc.t_start:.0f}s] ({doc.extra.get('role', '?')}) {doc.text}"
             for _, doc in store.docs(candidate.video_id, "transcript")

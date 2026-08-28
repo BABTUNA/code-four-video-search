@@ -38,6 +38,15 @@ def test_pick_frames_samples_within_span(tmp_path):
     assert len(many) == 8
 
 
+def test_pick_frames_guarantees_evidence_peaks(tmp_path):
+    for index in range(1, 31):
+        (tmp_path / f"{index:06d}.jpg").touch()
+    picked = pick_frames(tmp_path, 0.5, 0.0, 58.0, count=8, focus_times=[42.0])
+    times = [(int(p.stem) - 1) / 0.5 for p in picked]
+    assert len(picked) == 8
+    assert any(abs(t - 42.0) <= 1.0 for t in times)
+
+
 def test_fallback_plan_covers_all_modalities():
     plan = fallback_plan("find shouting")
     assert plan["sub_queries"][0]["role"] == "required"

@@ -68,9 +68,11 @@ queries:
   - query: a vehicle stopped by police at night
     type: cross_modal
     truth:
-      - {video: video_20, start: 0, end: 26}       # frames: 03:52 AM overlay
-      - {video: video_29, start: 0, end: 30}       # frames: 23:41 overlay
-    # rejected: six daylight stops the scan proposed.
+      - {video: video_20, start: 0, end: 1460}     # scene data: indoors at 1460s
+      - {video: video_29, start: 0, end: 400}      # scene data: indoors at 400s
+    # satisfies the query. Originally labeled only the opening ~30s (frames:
+    # 03:52 AM and 23:41 overlays) - that under-labeling penalized correct
+    # answers from later in the same stop. rejected: six daylight stops.
 
   - query: firefighters respond to a vehicle fire at night
     type: cross_modal
@@ -81,8 +83,9 @@ queries:
   - query: an officer conducts a traffic stop in daylight
     type: cross_modal
     truth:
-      - {video: video_19, start: 0, end: 60}
-      - {video: video_16, start: 0, end: 90}
+      - {video: video_19, start: 0, end: 890}      # never leaves the roadside
+      - {video: video_16, start: 0, end: 420}      # of each daylight encounter
+    # (before booking/indoor scenes); originally only the opening minute.
 
   - query: an officer reads someone their Miranda rights
     type: direct

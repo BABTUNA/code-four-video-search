@@ -5,6 +5,7 @@ description = "Natural-language search over body-worn camera footage"
 requires-python = ">=3.12"
 dependencies = [
     "clip",
+    "httpx>=0.28.1",
     "mlx-whisper>=0.4.3",
     "numpy>=2",
     "ocrmac>=1.0.1",

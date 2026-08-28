@@ -32,7 +32,7 @@ class AudioEventsExtractor:
         self.window_s = options.get("window_s", 10.0)
         self.threshold = options.get("threshold", 0.35)
 
-    def run(self, video: VideoMeta, assets: MediaAssets, workdir: Path) -> list[Doc]:
+    def run(self, video: VideoMeta, assets: MediaAssets, workdir: Path, store=None) -> list[Doc]:
         import numpy as np
         import soundfile
         import torch

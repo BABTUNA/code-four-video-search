@@ -67,7 +67,7 @@ def ingest_video(source: Path, config: dict) -> dict[str, int]:
         if cache.is_done(stage_dir):
             docs = [Doc(**fields) for fields in json.loads(docs_file.read_text())]
         else:
-            docs = extractor.run(video, assets, stage_dir)
+            docs = extractor.run(video, assets, stage_dir, store)
             docs_file.write_text(json.dumps([asdict(doc) for doc in docs]))
             cache.mark_done(stage_dir)
 

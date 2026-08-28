@@ -19,3 +19,6 @@ extractors:
   - impl: arousal
   - impl: motion
   - impl: clock_ocr
+  # The one paid stage; reads transcript docs, so it stays after transcribe.
+  - impl: caption
+    model: google/gemini-3.5-flash-lite

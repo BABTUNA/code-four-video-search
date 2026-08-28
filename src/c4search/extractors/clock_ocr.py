@@ -52,7 +52,7 @@ class ClockOcrExtractor:
     def __init__(self, options: dict):
         self.every_s = options.get("every_s", 20.0)
 
-    def run(self, video: VideoMeta, assets: MediaAssets, workdir: Path) -> list[Doc]:
+    def run(self, video: VideoMeta, assets: MediaAssets, workdir: Path, store=None) -> list[Doc]:
         from ocrmac import ocrmac
 
         frame_paths = sorted(assets.frames_dir.glob("*.jpg"))

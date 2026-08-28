@@ -47,7 +47,7 @@ class TranscribeExtractor:
     def __init__(self, options: dict):
         self.model = options.get("model", "mlx-community/whisper-large-v3-turbo")
 
-    def run(self, video: VideoMeta, assets: MediaAssets, workdir: Path) -> list[Doc]:
+    def run(self, video: VideoMeta, assets: MediaAssets, workdir: Path, store=None) -> list[Doc]:
         import mlx_whisper  # deferred so the test suite never loads the model
 
         result = mlx_whisper.transcribe(

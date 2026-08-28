@@ -21,7 +21,7 @@ class DetectExtractor:
         self.vocabulary = options.get("vocabulary", VOCABULARY)
         self.confidence = options.get("confidence", 0.35)
 
-    def run(self, video: VideoMeta, assets: MediaAssets, workdir: Path) -> list[Doc]:
+    def run(self, video: VideoMeta, assets: MediaAssets, workdir: Path, store=None) -> list[Doc]:
         import torch
         from ultralytics import YOLO
 

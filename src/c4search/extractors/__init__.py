@@ -4,6 +4,7 @@ from c4search.extractors import (  # noqa: F401
     arousal,
     audio_events,
     audio_tags,
+    caption,
     clock_ocr,
     detect,
     diarize,

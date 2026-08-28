@@ -32,7 +32,7 @@ class FramesExtractor:
         self.model_id = options.get("model", "google/siglip2-base-patch16-256")
         self.batch_size = options.get("batch_size", 32)
 
-    def run(self, video: VideoMeta, assets: MediaAssets, workdir: Path) -> list[Doc]:
+    def run(self, video: VideoMeta, assets: MediaAssets, workdir: Path, store=None) -> list[Doc]:
         import numpy as np
         import torch
         from PIL import Image

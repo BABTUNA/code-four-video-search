@@ -10,7 +10,8 @@ class Extractor(Protocol):
 
     name: str
 
-    def run(self, video: VideoMeta, assets: MediaAssets, workdir: Path) -> list[Doc]: ...
+    def run(self, video: VideoMeta, assets: MediaAssets, workdir: Path,
+            store=None) -> list[Doc]: ...
 
 
 EXTRACTORS: dict[str, Callable[[dict], Extractor]] = {}

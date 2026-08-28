@@ -37,7 +37,7 @@ class ArousalExtractor:
         self.window_s = options.get("window_s", 5.0)
         self.threshold = options.get("threshold", 0.6)
 
-    def run(self, video: VideoMeta, assets: MediaAssets, workdir: Path) -> list[Doc]:
+    def run(self, video: VideoMeta, assets: MediaAssets, workdir: Path, store=None) -> list[Doc]:
         import soundfile
         import torch
         from transformers import AutoConfig, Wav2Vec2Model, Wav2Vec2Processor

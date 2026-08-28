@@ -18,7 +18,7 @@ VIDEO = VideoMeta(video_id="video_1", path="video_1.mp4", duration_s=60.0,
 # Extractors that load real models; their logic is unit-tested in their own
 # test modules and their end-to-end behavior verified on real footage.
 HEAVY = {"transcribe", "diarize", "frames", "detect", "audio_events",
-         "audio_tags", "arousal", "motion", "clock_ocr"}
+         "audio_tags", "arousal", "motion", "clock_ocr", "caption"}
 
 
 @register_extractor("fake")
@@ -28,7 +28,8 @@ class FakeExtractor:
     def __init__(self, options: dict):
         self.options = options
 
-    def run(self, video: VideoMeta, assets: MediaAssets, workdir: Path) -> list[Doc]:
+    def run(self, video: VideoMeta, assets: MediaAssets, workdir: Path,
+            store=None) -> list[Doc]:
         return [Doc(video.video_id, 0.0, 2.0, "fake", "hello")]
 
 
@@ -45,7 +46,7 @@ def validate_docs(docs: list[Doc], video: VideoMeta) -> None:
 def test_extractor_contract(name, tmp_path):
     extractor = EXTRACTORS[name]({})
     assert extractor.name == name
-    validate_docs(extractor.run(VIDEO, None, tmp_path), VIDEO)
+    validate_docs(extractor.run(VIDEO, None, tmp_path, None), VIDEO)
 
 
 @pytest.mark.parametrize("name", sorted(HEAVY))

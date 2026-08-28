@@ -42,7 +42,7 @@ class DiarizeExtractor:
     def __init__(self, options: dict):
         self.device = options.get("device", "auto")
 
-    def run(self, video: VideoMeta, assets: MediaAssets, workdir: Path) -> list[Doc]:
+    def run(self, video: VideoMeta, assets: MediaAssets, workdir: Path, store=None) -> list[Doc]:
         import senko  # deferred so the test suite never loads the models
 
         diarizer = senko.Diarizer(device=self.device, warmup=False, quiet=True)

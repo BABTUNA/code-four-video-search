@@ -50,7 +50,7 @@ class MotionExtractor:
         self.threshold = options.get("threshold", 0.08)
         self.min_s = options.get("min_s", 3.0)
 
-    def run(self, video: VideoMeta, assets: MediaAssets, workdir: Path) -> list[Doc]:
+    def run(self, video: VideoMeta, assets: MediaAssets, workdir: Path, store=None) -> list[Doc]:
         series = motion_series(assets.proxy)
         return [
             Doc(video.video_id, t_start, t_end, "motion",

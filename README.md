@@ -63,44 +63,33 @@ The main README includes only the research that directly changed the design. See
 ### 3.1 Modality extraction
 
 Long-video models struggle to locate brief events. On the LVBench subset of
-LV-Haystack, existing keyframe-selection methods reach only 2.1% temporal F1. T*
-responds with question-guided temporal search
-([arXiv 2504.02259](https://arxiv.org/abs/2504.02259)). VideoAgent uses 8.4 frames
-on average and outperforms the 256-frame LongViViT baseline on EgoSchema
-([arXiv 2403.10517](https://arxiv.org/abs/2403.10517)). Together, these results
-support selective search instead of sending every frame to one model.
+LV-Haystack, existing keyframe-selection methods reach only 2.1% temporal F1.
+**[Re-thinking Temporal Search for Long-Form Video Understanding](https://arxiv.org/abs/2504.02259)**
+introduces T* as a question-guided response to this problem.
+**[VideoAgent: Long-form Video Understanding with Large Language Model as Agent](https://arxiv.org/abs/2403.10517)**
+uses 8.4 frames on average and outperforms the 256-frame LongViViT baseline on
+EgoSchema. Together, these results support selective search instead of sending every
+frame to one model.
 
 ![Video-RAG auxiliary text extraction](docs/figures/videorag-framework.png)
 ***Figure 1. Video-RAG auxiliary evidence retrieval.*** *Video-RAG converts ASR, OCR,
 and object detections into searchable text. This system
 extends the same pattern to additional bodycam modalities
-([arXiv 2411.13093](https://arxiv.org/abs/2411.13093)).*
-
-Speech is a major bodycam signal, but long-form Whisper can drift, repeat, and
-hallucinate phrases. The transcriber therefore uses word timestamps, decode-failure
-thresholds, and a blocklist for recurring stock outputs. WhisperX informed the
-timestamping and filtering design, but this implementation uses MLX Whisper rather
-than the complete WhisperX pipeline.
-
-![WhisperX pipeline](docs/figures/whisperx-pipeline.png)
-***Figure 2. WhisperX transcription pipeline.*** *Reference architecture only.
-WhisperX combines VAD, cut-and-merge, and forced
-phoneme alignment. This project does not implement that complete pipeline
-([arXiv 2303.00747](https://arxiv.org/abs/2303.00747)).*
+(**[Video-RAG: Visually-aligned Retrieval-Augmented Long Video Comprehension](https://arxiv.org/abs/2411.13093)**).*
 
 The remaining extractor choices follow four practical observations:
 
 * **Frames:** MAD uses frame-level CLIP features, mean-pooled over candidate
   proposals, as a competitive long-form grounding baseline
-  ([MAD](https://arxiv.org/abs/2112.00431)).
+  (**[MAD: A Scalable Dataset for Language Grounding in Videos from Movie Audio Descriptions](https://arxiv.org/abs/2112.00431)**).
 * **Audio:** CLAP supports text-to-audio retrieval, while PANNs supports audio tagging
   and sound-event detection. These results motivate separate audio indexes, but do
   not establish accuracy on police footage
-  ([CLAP](https://arxiv.org/abs/2211.06687),
-  [PANNs](https://arxiv.org/abs/1912.10211)).
+  (**[Large-scale Contrastive Language-Audio Pretraining with Feature Fusion and Keyword-to-Caption Augmentation](https://arxiv.org/abs/2211.06687)**,
+  **[PANNs: Large-Scale Pretrained Audio Neural Networks for Audio Pattern Recognition](https://arxiv.org/abs/1912.10211)**).
 * **Captions:** VLM captions make visible actions searchable when nobody names them
-  ([LLoVi](https://arxiv.org/abs/2312.17235),
-  [Goldfish](https://arxiv.org/abs/2407.12679)).
+  (**[A Simple LLM Framework for Long-Range Video Question-Answering](https://arxiv.org/abs/2312.17235)**,
+  **[Goldfish: Vision-Language Understanding of Arbitrarily Long Videos](https://arxiv.org/abs/2407.12679)**).
 * **Domain signals:** diarization, clock OCR, object detection, vocal arousal, and
   camera motion add bodycam-specific evidence.
 
@@ -110,38 +99,39 @@ The query pipeline follows a search-then-inspect approach. Retrieval proposes a 
 set of moments, then a VLM judges only those moments.
 
 ![T* iterative temporal search](docs/figures/tstar-framework.png)
-***Figure 3. T* question-guided temporal search.*** *T* grounds the question,
+***Figure 2. T* question-guided temporal search.*** *T* grounds the question,
 searches through temporal and spatial upsampling, and
 passes selected frames to the answering model. We borrow the separation between
 search and answering, not the T* search algorithm itself
-([arXiv 2504.02259](https://arxiv.org/abs/2504.02259)).*
+(**[Re-thinking Temporal Search for Long-Form Video Understanding](https://arxiv.org/abs/2504.02259)**).*
 
 ![Goldfish retrieval framework](docs/figures/goldfish-framework.png)
-***Figure 4. Goldfish retrieve-then-answer framework.*** *Goldfish retrieves relevant
+***Figure 3. Goldfish retrieve-then-answer framework.*** *Goldfish retrieves relevant
 clips before answering over long videos. Our pipeline
 adds rank fusion, reranking, temporal merging, and verification
-([arXiv 2407.12679](https://arxiv.org/abs/2407.12679)).*
+(**[Goldfish: Vision-Language Understanding of Arbitrarily Long Videos](https://arxiv.org/abs/2407.12679)**).*
 
 Three findings shape the precision stages:
 
 * **Negation:** embedding models handle negation poorly, so negative constraints are
   checked during final verification
-  ([NevIR](https://arxiv.org/abs/2305.07614),
-  [NegBench](https://arxiv.org/abs/2501.09425)).
+  (**[NevIR: Negation in Neural Information Retrieval](https://arxiv.org/abs/2305.07614)**,
+  **[Vision-Language Models Do Not Understand Negation](https://arxiv.org/abs/2501.09425)**).
 * **Attribute binding:** CLIP-like models often confuse relationships such as a red
   shirt versus a red car, so the verifier inspects real frames
-  ([ARO](https://arxiv.org/abs/2210.01936)).
+  (**[When and Why Vision-Language Models Behave Like Bags-of-Words, and What to Do About It?](https://arxiv.org/abs/2210.01936)**).
 * **Localization:** strict top-1 localization remains difficult, so the system returns
   a ranked evidence-bearing shortlist rather than claiming one perfect answer
-  ([SnAG](https://arxiv.org/abs/2404.02257)).
+  (**[SnAG: Scalable and Accurate Video Grounding](https://arxiv.org/abs/2404.02257)**).
 
 Video-LLMs can follow misleading prompts even when they conflict with visual evidence
-([VISE](https://arxiv.org/abs/2506.07180)). The verifier therefore describes the
-evidence before judging it and runs at temperature zero for repeatability. It returns
-discrete tiers because VLM verbalized confidence is often miscalibrated
-([CSP](https://arxiv.org/abs/2504.14848)). Conformal abstention is a future improvement
-that requires a separate calibration set
-([arXiv 2405.01563](https://arxiv.org/abs/2405.01563)).
+(**[Flattery in Motion: Benchmarking and Analyzing Sycophancy in Video-LLMs](https://arxiv.org/abs/2506.07180)**).
+The verifier therefore describes the evidence before judging it and runs at
+temperature zero for repeatability. It returns discrete tiers because VLM verbalized
+confidence is often miscalibrated
+(**[Object-Level Verbalized Confidence Calibration in Vision-Language Models via Semantic Perturbation](https://arxiv.org/abs/2504.14848)**).
+Conformal abstention is a future improvement that requires a separate calibration set
+(**[Mitigating LLM Hallucinations via Conformal Abstention](https://arxiv.org/abs/2405.01563)**).
 
 ## 4. Architecture
 
@@ -149,7 +139,7 @@ The full operational specification is in [docs/pipeline.md](docs/pipeline.md).
 
 ![Code Four system architecture](docs/figures/system-architecture.drawio.png)
 
-***Figure 5. Code Four system architecture.*** *Offline ingestion creates a shared
+***Figure 4. Code Four system architecture.*** *Offline ingestion creates a shared
 evidence index. Online search retrieves and
 combines evidence before a VLM verifies the strongest candidate segments.*
 
@@ -269,5 +259,21 @@ recall. Extra incorrect results after the first hit are not currently penalized.
 | Correct moment ranks below the cutoff | Relevant segment appears below rank five | Improve fusion and candidate depth |
 | Temporal anchor is weak | Events described as before or after another event | Restrict anchor matches to one video |
 
+## 7. Next steps
+
 The current priority is better evaluation coverage, especially true precision and
 recall, prosody queries, visual-only queries, negation, and temporal anchors.
+
+### More reliable transcription
+
+The current transcriber uses MLX Whisper word timestamps, decode-failure thresholds,
+and a blocklist for recurring stock outputs. A future experiment would compare it
+against the complete WhisperX pipeline, which adds voice activity detection,
+cut-and-merge batching, and forced phoneme alignment. The upgrade should be adopted
+only if it measurably improves timestamp accuracy and reduces hallucinated phrases
+without adding excessive processing time.
+
+![WhisperX pipeline](docs/figures/whisperx-pipeline.png)
+***Figure 5. WhisperX candidate transcription upgrade.*** *This is a reference
+architecture, not the current implementation
+(**[WhisperX: Time-Accurate Speech Transcription of Long-Form Audio](https://arxiv.org/abs/2303.00747)**).*

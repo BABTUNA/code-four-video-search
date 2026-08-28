@@ -2,8 +2,9 @@ from pathlib import Path
 
 import typer
 
+import c4search.extractors  # noqa: F401  (registers extractors)
 from c4search.config import load_config
-from c4search.registry import build_extractors
+from c4search.ingest import ingest_video
 
 app = typer.Typer(no_args_is_help=True)
 
@@ -19,11 +20,14 @@ def ingest(
     config: Path = typer.Option(Path("configs/default.yaml"), "--config", "-c"),
 ) -> None:
     """Run the configured extractors over videos and index the results."""
-    extractors = build_extractors(load_config(config))
-    if not extractors:
+    settings = load_config(config)
+    if not settings.get("extractors"):
         typer.echo("No extractors configured yet; see configs/default.yaml.", err=True)
         raise typer.Exit(code=1)
-    raise NotImplementedError("ingest lands with the media-prep phase")
+    for video in videos:
+        typer.echo(f"{video.stem}:")
+        for stage, count in ingest_video(video, settings).items():
+            typer.echo(f"  {stage}: {count} docs")
 
 
 @app.command()

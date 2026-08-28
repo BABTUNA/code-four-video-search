@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Callable, Protocol
 
+from c4search.media import MediaAssets
 from c4search.models import Doc, VideoMeta
 
 
@@ -9,7 +10,7 @@ class Extractor(Protocol):
 
     name: str
 
-    def run(self, video: VideoMeta, workdir: Path) -> list[Doc]: ...
+    def run(self, video: VideoMeta, assets: MediaAssets, workdir: Path) -> list[Doc]: ...
 
 
 EXTRACTORS: dict[str, Callable[[dict], Extractor]] = {}

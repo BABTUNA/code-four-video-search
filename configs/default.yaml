@@ -4,5 +4,7 @@
 data_dir: data
 
 # Extractors run in order during `c4 ingest`; entries are added as each
-# extractor lands (e.g. {impl: transcribe, model: whisper-large-v3-turbo}).
-extractors: []
+# extractor lands. Each entry is {impl: <name>, ...options}.
+extractors:
+  - impl: transcribe
+    model: mlx-community/whisper-large-v3-turbo

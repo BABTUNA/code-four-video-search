@@ -8,11 +8,16 @@ from pathlib import Path
 
 import pytest
 
+from c4search.media import MediaAssets
 from c4search.models import Doc, VideoMeta
 from c4search.registry import EXTRACTORS, build_extractors, register_extractor
 
 VIDEO = VideoMeta(video_id="video_1", path="video_1.mp4", duration_s=60.0,
                   width=640, height=480)
+
+# Extractors that load real models; their logic is unit-tested in their own
+# test modules and their end-to-end behavior verified on real footage.
+HEAVY = {"transcribe"}
 
 
 @register_extractor("fake")
@@ -22,7 +27,7 @@ class FakeExtractor:
     def __init__(self, options: dict):
         self.options = options
 
-    def run(self, video: VideoMeta, workdir: Path) -> list[Doc]:
+    def run(self, video: VideoMeta, assets: MediaAssets, workdir: Path) -> list[Doc]:
         return [Doc(video.video_id, 0.0, 2.0, "fake", "hello")]
 
 
@@ -35,11 +40,17 @@ def validate_docs(docs: list[Doc], video: VideoMeta) -> None:
         assert isinstance(doc.text, str)
 
 
-@pytest.mark.parametrize("name", sorted(EXTRACTORS))
+@pytest.mark.parametrize("name", sorted(set(EXTRACTORS) - HEAVY))
 def test_extractor_contract(name, tmp_path):
     extractor = EXTRACTORS[name]({})
     assert extractor.name == name
-    validate_docs(extractor.run(VIDEO, tmp_path), VIDEO)
+    validate_docs(extractor.run(VIDEO, None, tmp_path), VIDEO)
+
+
+@pytest.mark.parametrize("name", sorted(HEAVY))
+def test_heavy_extractors_construct(name):
+    extractor = EXTRACTORS[name]({})
+    assert extractor.name == name
 
 
 def test_build_extractors_uses_config_order_and_options():

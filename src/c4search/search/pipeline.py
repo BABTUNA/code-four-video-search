@@ -123,9 +123,14 @@ def run_search(query: str, store: Store, config: dict, verify: bool = True,
         # rephrasings - "orders the driver to step out" is satisfied by the
         # spoken order even if the step-out never visibly happens.
         elements = [query] + [f"NOT: {sq['text']}" for sq in negatives]
+        # A query whose required sub-queries all target speech is asking about
+        # what was said - the transcript is its primary evidence.
+        anchors = [sq for sq in positives if sq["role"] == "required"] or positives
+        speech_only = all(sq["modalities"] == ["speech"] for sq in anchors)
         for candidate in candidates:
             verdict = verifier.verify(
-                candidate, elements, store, media_info(store, candidate.video_id))
+                candidate, elements, store, media_info(store, candidate.video_id),
+                speech_only=speech_only)
             results.append({"candidate": candidate, "verdict": verdict})
         telemetry["cost_usd"] += verifier.cost_usd
         # Verified evidence outranks unverified: a confirmed match below an

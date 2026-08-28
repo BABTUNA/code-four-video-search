@@ -154,7 +154,7 @@ class Verifier:
             return None
 
     def verify(self, candidate: Candidate, elements: list[str],
-               store: Store, media: dict) -> dict:
+               store: Store, media: dict, speech_only: bool = False) -> dict:
         """Returns the verdict plus a tier: confirmed / candidate / rejected."""
         evidence_docs = store.get_docs(candidate.evidence[:4])
         focus_times = [
@@ -178,6 +178,10 @@ class Verifier:
             elements="\n".join(f"- {element}" for element in elements),
             transcript=transcript or "(no speech in range)",
         )
+        if speech_only:
+            prompt += ("\nNote: this query asks about something said or "
+                       "discussed. The transcript is the primary evidence; "
+                       "judge the match from it, with frames as context only.")
 
         verdict = None
         if frame_paths and self.use_local:

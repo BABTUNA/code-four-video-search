@@ -233,7 +233,7 @@ Each row is a swappable YAML configuration.
 | 3. Add frames and objects | 0.50 | 0.67 | 0/6 | 1 | 2.3 | $0 |
 | 4. Add audio, arousal, and motion | 0.50 | 0.72 | 0/6 | 1 | 2.4 | $0 |
 | 5. Add VLM verification | 0.50 | 0.67 | 5/6 | 4 | 14.7 | $0.014 |
-| **Recommended: captions retrieval + verification** | **0.67** | 0.83 | **6/6** | **1** | 13.2 | $0.014 |
+| **Recommended: captions retrieval + verification** | **0.67** | 0.83 | **6/6** | 2 | 13.8 | $0.014 |
 
 The results support three conclusions:
 
@@ -243,7 +243,7 @@ The results support three conclusions:
    set.** The label discovery process favors transcript and caption evidence.
 3. **Verification improves abstention, and evidence-guided judging makes it pay for
    itself.** The recommended configuration rejects all six no-answer traps, reaches
-   the best Hit@1, and leaves one false abstention - after the verifier's frame
+   the best Hit@1, and leaves two false abstentions - after the verifier's frame
    sample was anchored to the strongest evidence and its rules were taught that
    frames contradicting the transcript differ from frames merely missing the moment.
 
@@ -254,7 +254,7 @@ recall. Extra incorrect results after the first hit are not currently penalized.
 
 | Failure | Example | Next improvement |
 |---|---|---|
-| Verifier rejects valid evidence | A discussed event is judged as an unseen event | Transcript-aware judging rules landed (false abstentions 3 to 1); one discuss-style rejection remains |
+| Verifier rejects valid evidence | A discussed event is judged as an unseen event | Transcript-aware judging landed (false abstentions 3 to 2); the planner still adds a visual requirement to some speech queries, which blocks the transcript-primary rule |
 | Scene evidence and event evidence occur at different times | Night and daylight stops | Apply scene attributes as filters |
 | Correct moment ranks below the cutoff | Relevant segment appears below rank five | Improve fusion and candidate depth |
 | Temporal anchor is weak | Events described as before or after another event | Restrict anchor matches to one video |

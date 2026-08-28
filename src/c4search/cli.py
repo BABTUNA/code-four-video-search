@@ -65,11 +65,14 @@ def search(
                          use_planner=not no_plan, top=top)
 
     shown = 0
+    playlist = []
     for rank, result in enumerate(outcome["results"], 1):
         candidate, verdict = result["candidate"], result["verdict"]
         if verdict["tier"] == "rejected" and shown:
             continue
         shown += 1
+        playlist.append({"rank": rank, "video": candidate.video_id,
+                         "t_start": candidate.t_start, "t_end": candidate.t_end})
         typer.echo(
             f"\n#{rank}  {candidate.video_id}  "
             f"{hms(candidate.t_start)}-{hms(candidate.t_end)}  "
@@ -84,6 +87,11 @@ def search(
             typer.echo(f"    {doc.modality:12s} [{hms(doc.t_start)}] {label[:76]}")
     if shown == 0:
         typer.echo("no confident match")
+    else:
+        import json
+        store.root.joinpath("last_search.json").write_text(
+            json.dumps({"query": query, "results": playlist}))
+        typer.echo("\nwatch a result at its timestamp: c4 play <rank>")
     telemetry = outcome["telemetry"]
     typer.echo(
         f"\n[{telemetry['total_s']}s"
@@ -93,6 +101,49 @@ def search(
         f" · verify {telemetry['stage_s']['verify']}s"
         f" | API ${telemetry['cost_usd']}]"
     )
+
+
+@app.command()
+def play(
+    rank: int = typer.Argument(1, help="Result number from the last search"),
+    before: float = typer.Option(3.0, help="Seconds of context before the span"),
+    config: Path = typer.Option(Path("configs/default.yaml"), "--config", "-c"),
+) -> None:
+    """Open a video player at the timestamp of a result from the last search."""
+    import json
+    import shutil
+    import subprocess
+
+    from c4search.store import Store
+
+    settings = load_config(config)
+    store = Store(Path(settings.get("data_dir", "data")) / "index")
+    state_file = store.root / "last_search.json"
+    if not state_file.exists():
+        typer.echo("no previous search - run c4 search first", err=True)
+        raise typer.Exit(code=1)
+
+    state = json.loads(state_file.read_text())
+    entry = next((r for r in state["results"] if r["rank"] == rank), None)
+    if entry is None:
+        typer.echo(f"no result #{rank} in the last search", err=True)
+        raise typer.Exit(code=1)
+
+    media = json.loads((store.root / f"{entry['video']}.media.json").read_text())
+    start = max(0.0, entry["t_start"] - before)
+    player = shutil.which("mpv") or shutil.which("ffplay")
+    if player is None:
+        typer.echo("needs mpv or ffplay on PATH", err=True)
+        raise typer.Exit(code=1)
+
+    title = f"{entry['video']}  {hms(entry['t_start'])}-{hms(entry['t_end'])}"
+    if player.endswith("mpv"):
+        arguments = [player, f"--start={start}", f"--title={title}", media["source"]]
+    else:
+        arguments = [player, "-ss", str(start), "-window_title", title,
+                     "-loglevel", "error", media["source"]]
+    typer.echo(f"opening {title} (from {hms(start)})")
+    subprocess.Popen(arguments)
 
 
 @app.command()

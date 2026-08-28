@@ -3,6 +3,7 @@ from pathlib import Path
 from c4search.media import MediaAssets, frame_time
 from c4search.models import Doc, VideoMeta
 from c4search.registry import register_extractor
+from c4search.timeline import merge_runs
 
 # Zero-shot scene prompts, classified with the same SigLIP embeddings the
 # frames are indexed with - the scene attributes cost no extra model.
@@ -15,17 +16,6 @@ SCENE_PROMPTS = {
 # Mean 8-bit luma below this is night regardless of what the classifier says;
 # headlights and streetlamps fool CLIP-family models more than a histogram.
 NIGHT_LUMA = 40.0
-
-
-def merge_runs(labels: list[str], times: list[float], gap: float) -> list[tuple[float, float, str]]:
-    """Collapse per-frame labels into (start, end, label) spans."""
-    spans = []
-    for label, time in zip(labels, times):
-        if spans and spans[-1][2] == label and time - spans[-1][1] <= gap:
-            spans[-1] = (spans[-1][0], time, label)
-        else:
-            spans.append((time, time, label))
-    return spans
 
 
 def scene_label(prompt_label: str, luma: float) -> str:

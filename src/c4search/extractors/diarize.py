@@ -5,6 +5,7 @@ from statistics import median
 from c4search.media import MediaAssets
 from c4search.models import Doc, VideoMeta
 from c4search.registry import register_extractor
+from c4search.timeline import overlap
 
 
 def officer_speaker(turns: list[dict], loudness: list[list[float]]) -> str | None:
@@ -21,10 +22,6 @@ def officer_speaker(turns: list[dict], loudness: list[list[float]]) -> str | Non
     if len(by_speaker) < 2:
         return None
     return max(by_speaker, key=lambda speaker: median(by_speaker[speaker]))
-
-
-def overlap(a_start: float, a_end: float, b_start: float, b_end: float) -> float:
-    return max(0.0, min(a_end, b_end) - max(a_start, b_start))
 
 
 def speaker_for(t_start: float, t_end: float, turns: list[dict]) -> dict | None:

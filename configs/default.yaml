@@ -13,3 +13,9 @@ extractors:
     model: google/siglip2-base-patch16-256
   - impl: detect
     model: yolov8s-worldv2.pt
+  - impl: audio_events
+    threshold: 0.35
+  - impl: audio_tags
+  - impl: arousal
+  - impl: motion
+  - impl: clock_ocr

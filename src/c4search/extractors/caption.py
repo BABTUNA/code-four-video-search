@@ -1,11 +1,10 @@
 import base64
-import json
-import os
 import subprocess
 from pathlib import Path
 
 from c4search.media import MediaAssets
 from c4search.models import Doc, VideoMeta
+from c4search.openrouter import chat_json
 from c4search.registry import register_extractor
 
 PROMPT = """You are indexing police body-worn camera footage for search.
@@ -41,17 +40,6 @@ SCHEMA = {
         }
     },
 }
-
-
-def api_key() -> str:
-    key = os.environ.get("OPENROUTER_API_KEY", "")
-    if not key and Path(".env").exists():
-        for line in Path(".env").read_text().splitlines():
-            if line.startswith("OPENROUTER_API_KEY="):
-                key = line.split("=", 1)[1].strip()
-    if not key:
-        raise RuntimeError("OPENROUTER_API_KEY not set (env or .env)")
-    return key
 
 
 def chunk_spans(duration_s: float, chunk_s: float) -> list[tuple[float, float]]:
@@ -108,41 +96,18 @@ class CaptionExtractor:
             raise RuntimeError(f"ffmpeg failed: {result.stderr[-300:]}")
 
     def caption_chunk(self, chunk_file: Path, transcript: str) -> tuple[list[dict], float | None]:
-        import httpx
-
         video_url = "data:video/mp4;base64," + base64.b64encode(
             chunk_file.read_bytes()).decode()
-        payload = {
-            "model": self.model,
-            "messages": [{
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": PROMPT.format(transcript=transcript or "(no speech)")},
-                    {"type": "video_url", "video_url": {"url": video_url}},
-                ],
-            }],
-            "response_format": {"type": "json_schema", "json_schema": {
-                "name": "chunk_events", "strict": True, "schema": SCHEMA}},
-            "usage": {"include": True},
-        }
-        headers = {"Authorization": f"Bearer {api_key()}"}
-
-        last_error = None
-        for _ in range(2):  # one retry: transient drops happen on big uploads
-            try:
-                response = httpx.post(
-                    f"{self.base_url}/chat/completions", json=payload,
-                    headers=headers, timeout=240,
-                )
-                response.raise_for_status()
-                body = response.json()
-                content = body["choices"][0]["message"]["content"]
-                events = json.loads(content)["events"]
-                cost = body.get("usage", {}).get("cost")
-                return events, cost
-            except (httpx.HTTPError, KeyError, json.JSONDecodeError) as error:
-                last_error = error
-        raise RuntimeError(f"captioning failed after retry: {last_error}")
+        parsed, cost = chat_json(
+            model=self.model,
+            content=[
+                {"type": "text",
+                 "text": PROMPT.format(transcript=transcript or "(no speech)")},
+                {"type": "video_url", "video_url": {"url": video_url}},
+            ],
+            schema=SCHEMA, schema_name="chunk_events", base_url=self.base_url,
+        )
+        return parsed["events"], cost
 
     def run(self, video: VideoMeta, assets: MediaAssets, workdir: Path, store=None) -> list[Doc]:
         transcript_docs = store.docs(video.video_id, "transcript") if store else []

@@ -1,0 +1,25 @@
+# Starter labeled set for the dev clip (first 2 minutes of video_1).
+# Spans were human-verified against the footage; this grows with the corpus
+# via eval/expand_queries.py + the audit sheet before any scaled eval.
+queries:
+  - query: officer orders the driver to step out of the vehicle
+    type: easy
+    truth:
+      - video: clip
+        start: 73
+        end: 106
+  - query: officer asks the driver to roll down the window
+    type: easy
+    truth:
+      - video: clip
+        start: 50
+        end: 56
+  - query: a vehicle stopped in a drive-thru lane at night
+    type: hard
+    truth:
+      - video: clip
+        start: 22
+        end: 49
+  - query: a gunshot is fired
+    type: no_answer
+    truth: []

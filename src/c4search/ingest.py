@@ -87,6 +87,15 @@ def ingest_video(source: Path, config: dict) -> dict[str, int]:
 
     annotate_speakers(store, video.video_id)
     build_text_index(store, video.video_id, config)
+
+    # The verifier later needs real frames; record where this video's live.
+    (store.root / f"{video.video_id}.media.json").write_text(json.dumps({
+        "source": str(source.resolve()),
+        "duration_s": video.duration_s,
+        "frames_dir": str(assets.frames_dir),
+        "frame_fps": assets.frame_fps,
+        "proxy": str(assets.proxy),
+    }))
     return counts
 
 

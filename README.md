@@ -57,6 +57,11 @@ flowchart LR
 
 Consequence: spend ingest effort producing *searchable indexes*, not understanding.
 
+![T* iterative temporal search](docs/figures/tstar-framework.png)
+*The search-then-inspect loop we adopt the philosophy of: ground the question, search
+iteratively, hand only confirmed frames to the answering VLM. Figure from T\*
+([arXiv 2504.02259](https://arxiv.org/abs/2504.02259), Ye et al., CC BY-SA 4.0).*
+
 **Key diagram 2 — every extractor emits one canonical, self-timestamped record**
 (pattern from *Goldfish*'s fixed-time clip windows,
 [arXiv 2407.12679](https://arxiv.org/abs/2407.12679), *Video-RAG*'s visually-aligned
@@ -73,6 +78,12 @@ flowchart TD
     T & C & E & A & D --> R["Doc {video, t_start, t_end, modality, text}<br/>one absolute timeline, per-modality granularity"]
     R --> DB[(doc store + vector index)]
 ```
+
+![Video-RAG auxiliary text extraction](docs/figures/videorag-framework.png)
+*The published version of the pattern: extract ASR/OCR/detection into queryable text
+databases, retrieve per-request, integrate. We generalize it to nine extractors and
+persist the index. Figure from Video-RAG
+([arXiv 2411.13093](https://arxiv.org/abs/2411.13093), Luo et al., CC BY 4.0).*
 
 Each modality keeps its natural time grain (a 2-second quote stays 2 seconds; a frame
 is an instant); alignment happens at query time by merging on the shared timeline —
@@ -127,6 +138,13 @@ flowchart LR
     G --> Vf["VLM verifier: real frames + transcript<br/>→ confirm / reject / unclear"]
     Vf --> O["ranked results with evidence,<br/>or calibrated abstention"]
 ```
+
+![Goldfish retrieval framework](docs/figures/goldfish-framework.png)
+*The retrieve-top-k-then-answer skeleton at arbitrary video length: describe fixed-time
+clips (captions + subtitles), retrieve against the query, answer over only the
+retrieved clips. Our funnel adds rank fusion, a cross-encoder, temporal merging, and a
+verification stage on top of this shape. Figure from Goldfish
+([arXiv 2407.12679](https://arxiv.org/abs/2407.12679), Ataallah et al., CC BY 4.0).*
 
 Two placements in this funnel are dictated by negative results in the literature:
 negation is enforced at the cross-encoder and verifier because bi-encoders rank negated

@@ -71,7 +71,8 @@ on average and outperforms the 256-frame LongViViT baseline on EgoSchema
 support selective search instead of sending every frame to one model.
 
 ![Video-RAG auxiliary text extraction](docs/figures/videorag-framework.png)
-*Video-RAG converts ASR, OCR, and object detections into searchable text. This system
+***Figure 1. Video-RAG auxiliary evidence retrieval.*** *Video-RAG converts ASR, OCR,
+and object detections into searchable text. This system
 extends the same pattern to additional bodycam modalities
 ([arXiv 2411.13093](https://arxiv.org/abs/2411.13093)).*
 
@@ -82,7 +83,8 @@ timestamping and filtering design, but this implementation uses MLX Whisper rath
 than the complete WhisperX pipeline.
 
 ![WhisperX pipeline](docs/figures/whisperx-pipeline.png)
-*Reference architecture only. WhisperX combines VAD, cut-and-merge, and forced
+***Figure 2. WhisperX transcription pipeline.*** *Reference architecture only.
+WhisperX combines VAD, cut-and-merge, and forced
 phoneme alignment. This project does not implement that complete pipeline
 ([arXiv 2303.00747](https://arxiv.org/abs/2303.00747)).*
 
@@ -108,13 +110,15 @@ The query pipeline follows a search-then-inspect approach. Retrieval proposes a 
 set of moments, then a VLM judges only those moments.
 
 ![T* iterative temporal search](docs/figures/tstar-framework.png)
-*T* grounds the question, searches through temporal and spatial upsampling, and
+***Figure 3. T* question-guided temporal search.*** *T* grounds the question,
+searches through temporal and spatial upsampling, and
 passes selected frames to the answering model. We borrow the separation between
 search and answering, not the T* search algorithm itself
 ([arXiv 2504.02259](https://arxiv.org/abs/2504.02259)).*
 
 ![Goldfish retrieval framework](docs/figures/goldfish-framework.png)
-*Goldfish retrieves relevant clips before answering over long videos. Our pipeline
+***Figure 4. Goldfish retrieve-then-answer framework.*** *Goldfish retrieves relevant
+clips before answering over long videos. Our pipeline
 adds rank fusion, reranking, temporal merging, and verification
 ([arXiv 2407.12679](https://arxiv.org/abs/2407.12679)).*
 
@@ -145,7 +149,8 @@ The full operational specification is in [docs/pipeline.md](docs/pipeline.md).
 
 ![Code Four system architecture](docs/figures/system-architecture.drawio.png)
 
-*Offline ingestion creates a shared evidence index. Online search retrieves and
+***Figure 5. Code Four system architecture.*** *Offline ingestion creates a shared
+evidence index. Online search retrieves and
 combines evidence before a VLM verifies the strongest candidate segments.*
 
 ### 4.1 Modality extraction

@@ -39,10 +39,23 @@ wheels = [
 ]
 
 [[package]]
+name = "bm25s"
+version = "0.3.11"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/a4/f6/38a4eb22be0c715aa9bc290e44a48bbdf7a27cffa7f85914fd10242442e4/bm25s-0.3.11.tar.gz", hash = "sha256:8ae0f0707d279969829383c7aaeef00fb09ca343101160222571d6bfc969f889", size = 80978, upload-time = "2026-08-25T03:14:57.502Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/41/d9/bb770dabb7e0edeb2c949460a05c38df7f4f564a1693a778352fb0d213b0/bm25s-0.3.11-py3-none-any.whl", hash = "sha256:3d1d28badb299d6fc9324111e5c8276927e990b908607b39ff9bd65b102e9a24", size = 74985, upload-time = "2026-08-25T03:14:56.051Z" },
+]
+
+[[package]]
 name = "c4search"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "bm25s" },
     { name = "clip" },
     { name = "httpx" },
     { name = "mlx-whisper" },
@@ -53,6 +66,7 @@ dependencies = [
     { name = "pyyaml" },
     { name = "scipy" },
     { name = "senko" },
+    { name = "sentence-transformers" },
     { name = "soundfile" },
     { name = "torch" },
     { name = "transformers" },
@@ -67,6 +81,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "bm25s", specifier = ">=0.3.11" },
     { name = "clip", git = "https://github.com/ultralytics/CLIP.git" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "mlx-whisper", specifier = ">=0.4.3" },
@@ -77,6 +92,7 @@ requires-dist = [
     { name = "pyyaml", specifier = ">=6" },
     { name = "scipy", specifier = ">=1.18.1" },
     { name = "senko", specifier = ">=0.1.0" },
+    { name = "sentence-transformers", specifier = ">=6.0.0" },
     { name = "soundfile", specifier = ">=0.14.0" },
     { name = "torch", specifier = ">=2.13.0" },
     { name = "transformers", specifier = ">=5.16.1" },
@@ -2209,6 +2225,26 @@ dependencies = [
     { name = "umap-learn" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/bc/ba/995bdaf55c8669d60bd41dc3b5491b84eb308d1efd20897f3c839764251f/senko-0.1.0.tar.gz", hash = "sha256:0cdbc62bbd0d04aa8f60788f138257d8a49d4afb6f470c94df86478c96a7d319", size = 80989103, upload-time = "2026-04-21T03:53:09.489Z" }
+
+[[package]]
+name = "sentence-transformers"
+version = "6.0.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "huggingface-hub" },
+    { name = "numpy" },
+    { name = "scikit-learn" },
+    { name = "scipy" },
+    { name = "tokenizers" },
+    { name = "torch" },
+    { name = "tqdm" },
+    { name = "transformers" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/e7/43/6b53e6a2098440ce21478742facbc058f1a66ba2cb80b24bdc64942e1e2c/sentence_transformers-6.0.0.tar.gz", hash = "sha256:9e8c2c24f3b1c7473cd5f519a3d3cff60daaeb95533b82d045ffb43ee5f2dac4", size = 575048, upload-time = "2026-08-18T13:33:49.919Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/04/fe/9d19b01fe87945f9455c617bf5d33dfbf29fe06ab6580bc0bea06080c788/sentence_transformers-6.0.0-py3-none-any.whl", hash = "sha256:b974ac67523ea2a955afa87b1024129305472bd884367dcc969261cb086790e9", size = 739640, upload-time = "2026-08-18T13:33:48.428Z" },
+]
 
 [[package]]
 name = "setuptools"

@@ -34,10 +34,33 @@ def ingest(
 def search(
     query: str,
     config: Path = typer.Option(Path("configs/default.yaml"), "--config", "-c"),
+    top: int = typer.Option(10, help="How many fused hits to show"),
 ) -> None:
     """Search the indexed corpus with a natural-language query."""
-    typer.echo("search lands with the retrieval phase", err=True)
-    raise typer.Exit(code=1)
+    from c4search.search.fuse import rrf
+    from c4search.search.retrieve import Retrievers
+    from c4search.store import Store
+
+    settings = load_config(config)
+    store = Store(Path(settings.get("data_dir", "data")) / "index")
+    retrievers = Retrievers(store, settings.get("retrieval", {}))
+
+    depth = settings.get("retrieval", {}).get("depth", 100)
+    rankings = {
+        "bm25": retrievers.bm25(query, depth),
+        "dense": retrievers.dense_text(query, depth),
+        "frames": retrievers.frames(query, depth),
+        "audio": retrievers.audio(query, depth),
+    }
+    fused = rrf(rankings)[:top]
+    docs = store.get_docs([doc_id for doc_id, _ in fused])
+    for doc_id, score in fused:
+        doc = docs[doc_id]
+        label = doc.text or doc.extra.get("top_event", "")
+        typer.echo(
+            f"{score:.4f}  {doc.video_id}  [{doc.t_start:7.1f}-{doc.t_end:7.1f}]"
+            f"  {doc.modality:12s}  {label[:80]}"
+        )
 
 
 @app.command()

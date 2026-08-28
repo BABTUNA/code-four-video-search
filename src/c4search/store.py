@@ -100,3 +100,22 @@ class Store:
         ids = np.load(self.root / f"{name}.ids.npy")
         vectors = np.load(self.root / f"{name}.vectors.npy")
         return ids, vectors
+
+    def vector_names(self) -> list[str]:
+        return sorted(
+            path.name.removesuffix(".ids.npy")
+            for path in self.root.glob("*.ids.npy")
+        )
+
+    def get_docs(self, doc_ids: list[int]) -> dict[int, Doc]:
+        placeholders = ",".join("?" * len(doc_ids))
+        results = {}
+        for row in self.db.execute(
+            f"SELECT * FROM docs WHERE doc_id IN ({placeholders})", doc_ids,
+        ):
+            results[row["doc_id"]] = Doc(
+                video_id=row["video_id"], t_start=row["t_start"],
+                t_end=row["t_end"], modality=row["modality"],
+                text=row["text"], extra=json.loads(row["extra"]),
+            )
+        return results

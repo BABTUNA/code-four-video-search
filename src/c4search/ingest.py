@@ -86,4 +86,25 @@ def ingest_video(source: Path, config: dict) -> dict[str, int]:
             )
 
     annotate_speakers(store, video.video_id)
+    build_text_index(store, video.video_id, config)
     return counts
+
+
+def build_text_index(store: Store, video_id: str, config: dict) -> None:
+    """Embed every text-bearing Doc for dense retrieval (frames and audio
+    windows are already covered by their own vector sets)."""
+    from sentence_transformers import SentenceTransformer
+
+    rows = [
+        (doc_id, doc) for doc_id, doc in store.docs(video_id)
+        if doc.text and doc.modality not in {"frame", "audio_window"}
+    ]
+    if not rows:
+        return
+    model = SentenceTransformer(
+        config.get("retrieval", {}).get("text_model", "BAAI/bge-small-en-v1.5"))
+    vectors = model.encode(
+        [doc.text for _, doc in rows],
+        normalize_embeddings=True, show_progress_bar=False,
+    )
+    store.save_vectors(f"{video_id}.text", [doc_id for doc_id, _ in rows], vectors)

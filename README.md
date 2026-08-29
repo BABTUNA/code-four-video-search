@@ -133,7 +133,22 @@ confidence is often miscalibrated
 Conformal abstention is a future improvement that requires a separate calibration set
 (**[Mitigating LLM Hallucinations via Conformal Abstention](https://arxiv.org/abs/2405.01563)**).
 
-## 4. Architecture
+## 4. Rejected ideas: what's worth using vs. what's hype
+
+| Idea | Decision | Reason | Paper reference |
+|---|---|---|---|
+| Send the entire video to a long-context VLM | Rejected | Finding a few relevant moments remains weak, while question-guided selection works with far fewer frames | **[Re-thinking Temporal Search for Long-Form Video Understanding](https://arxiv.org/abs/2504.02259)** and **[VideoAgent: Long-form Video Understanding with Large Language Model as Agent](https://arxiv.org/abs/2403.10517)** |
+| Force every modality into fixed 30-second chunks | Rejected | One grid loses precise quotes and forces speech, scenes, and audio events onto the same scale | Internal segmentation test |
+| Assign categorical emotions such as angry or afraid | Rejected | Bodycam noise and speaker variation make these labels hard to defend; arousal is a narrower claim | **[Dawn of the Transformer Era in Speech Emotion Recognition: Closing the Valence Gap](https://arxiv.org/abs/2203.07378)** and **[Learning Arousal-Valence Representation from Categorical Emotion Labels of Speech](https://arxiv.org/abs/2311.14816)** |
+| Negation inside embedding queries | Rejected | Bi-encoders and vision-language models often fail to preserve negated meaning | **[NevIR: Negation in Neural Information Retrieval](https://arxiv.org/abs/2305.07614)** and **[Vision-Language Models Do Not Understand Negation](https://arxiv.org/abs/2501.09425)** |
+| Verbal VLM confidence | Rejected | A model's stated confidence is not reliably aligned with correctness | **[Object-Level Verbalized Confidence Calibration in Vision-Language Models via Semantic Perturbation](https://arxiv.org/abs/2504.14848)** |
+| Run self-consistency for every verification | Rejected | Sampling three judgments triples verifier calls without adding independent evidence | **[Self-Consistency Improves Chain of Thought Reasoning in Language Models](https://arxiv.org/abs/2203.11171)** |
+| Read a license plate from one sampled frame | Rejected | Blur, angle, and occlusion make one-frame OCR fragile; reliable video ALPR combines sightings | **[Character Time-series Matching for Robust License Plate Recognition](https://arxiv.org/abs/2307.11336)** |
+
+These are approaches the system should not adopt as designed. Promising ideas that
+were deferred because of data, scale, or cost appear in Section 7.
+
+## 5. Architecture
 
 The full operational specification is in [docs/pipeline.md](docs/pipeline.md).
 
@@ -143,7 +158,7 @@ The full operational specification is in [docs/pipeline.md](docs/pipeline.md).
 evidence index. Online search retrieves and
 combines evidence before a VLM verifies the strongest candidate segments.*
 
-### 4.1 Modality extraction
+### 5.1 Modality extraction
 
 Each extractor emits the same timestamped record type:
 
@@ -166,7 +181,7 @@ Extractors are registered through a small interface and selected in YAML. Replac
 model does not change the `Doc` contract or downstream search code. Stage caching
 also allows one extractor to rerun without repeating the whole ingest.
 
-### 4.2 Semantic search
+### 5.2 Semantic search
 
 The planner creates up to four searchable clauses, modality hints, lexical variants,
 scene filters, and negative constraints. The original query always remains a retrieval
@@ -177,21 +192,6 @@ combines their ranks without comparing incompatible model scores. A cross-encode
 reranks the best documents, and temporal merging joins evidence on the shared
 timeline. The verifier then judges the original user query from frames and transcript
 evidence.
-
-## 5. Rejected ideas: what's worth using vs. what's hype
-
-| Idea | Decision | Reason | Paper reference |
-|---|---|---|---|
-| Send the entire video to a long-context VLM | Rejected | Finding a few relevant moments remains weak, while question-guided selection works with far fewer frames | **[Re-thinking Temporal Search for Long-Form Video Understanding](https://arxiv.org/abs/2504.02259)** and **[VideoAgent: Long-form Video Understanding with Large Language Model as Agent](https://arxiv.org/abs/2403.10517)** |
-| Force every modality into fixed 30-second chunks | Rejected | One grid loses precise quotes and forces speech, scenes, and audio events onto the same scale | Internal segmentation test |
-| Assign categorical emotions such as angry or afraid | Rejected | Bodycam noise and speaker variation make these labels hard to defend; arousal is a narrower claim | **[Dawn of the Transformer Era in Speech Emotion Recognition: Closing the Valence Gap](https://arxiv.org/abs/2203.07378)** and **[Learning Arousal-Valence Representation from Categorical Emotion Labels of Speech](https://arxiv.org/abs/2311.14816)** |
-| Negation inside embedding queries | Rejected | Bi-encoders and vision-language models often fail to preserve negated meaning | **[NevIR: Negation in Neural Information Retrieval](https://arxiv.org/abs/2305.07614)** and **[Vision-Language Models Do Not Understand Negation](https://arxiv.org/abs/2501.09425)** |
-| Verbal VLM confidence | Rejected | A model's stated confidence is not reliably aligned with correctness | **[Object-Level Verbalized Confidence Calibration in Vision-Language Models via Semantic Perturbation](https://arxiv.org/abs/2504.14848)** |
-| Run self-consistency for every verification | Rejected | Sampling three judgments triples verifier calls without adding independent evidence | **[Self-Consistency Improves Chain of Thought Reasoning in Language Models](https://arxiv.org/abs/2203.11171)** |
-| Read a license plate from one sampled frame | Rejected | Blur, angle, and occlusion make one-frame OCR fragile; reliable video ALPR combines sightings | **[Character Time-series Matching for Robust License Plate Recognition](https://arxiv.org/abs/2307.11336)** |
-
-These are approaches the system should not adopt as designed. Promising ideas that
-were deferred because of data, scale, or cost appear in Section 7.
 
 ## 6. Evaluation
 

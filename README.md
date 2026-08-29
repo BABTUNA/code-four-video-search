@@ -49,6 +49,9 @@ uv run c4 search "find all interactions where an officer reads Miranda rights"
 
 # Evaluate against the labeled query set
 uv run c4 eval
+
+# Pre-executed walkthrough with inline video playback
+uv run jupyter lab demo.ipynb
 ```
 
 Ingest takes about 15 to 20 minutes of local compute and $0.10 to $0.35 of captioning

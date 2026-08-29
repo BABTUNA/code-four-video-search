@@ -180,23 +180,18 @@ evidence.
 
 ## 5. Rejected ideas: what's worth using vs. what's hype
 
-| Idea | Decision | Reason |
-|---|---|---|
-| Send the entire video to a long-context VLM | Rejected | Long-video temporal localization remains weak and expensive |
-| Supervised moment-retrieval models | Rejected | No labeled bodycam training set is available |
-| Video-native embeddings as the main index | Deferred | Evidence is stronger on trimmed clips than continuous bodycam footage |
-| Fixed 30-second ingest chunks | Rejected after testing | One grid loses precise quotes and forces every modality to one scale |
-| Categorical emotion labels | Rejected | Real-world accuracy is weak; arousal and overt events are easier to defend |
-| Negation inside embedding queries | Rejected | Bi-encoders perform poorly on negated meaning |
-| Verbal VLM confidence | Rejected | Confidence statements are not reliably calibrated |
-| Self-consistency for every verification | Rejected | It triples cost and can repeat the same error |
-| Fully local captioning | Deferred | Much slower for a small one-time cost saving |
-| ANN vector database | Deferred | NumPy search is fast enough for roughly 100,000 vectors |
-| Single-frame license plate reading | Not built | Reliable ALPR requires voting across multiple sightings |
-| Agentic multi-hop search | Deferred | Promising, but adds latency, cost, and complexity |
+| Idea | Decision | Reason | Paper reference |
+|---|---|---|---|
+| Send the entire video to a long-context VLM | Rejected | Finding a few relevant moments remains weak, while question-guided selection works with far fewer frames | **[Re-thinking Temporal Search for Long-Form Video Understanding](https://arxiv.org/abs/2504.02259)** and **[VideoAgent: Long-form Video Understanding with Large Language Model as Agent](https://arxiv.org/abs/2403.10517)** |
+| Force every modality into fixed 30-second chunks | Rejected | One grid loses precise quotes and forces speech, scenes, and audio events onto the same scale | Internal segmentation test |
+| Assign categorical emotions such as angry or afraid | Rejected | Bodycam noise and speaker variation make these labels hard to defend; arousal is a narrower claim | **[Dawn of the Transformer Era in Speech Emotion Recognition: Closing the Valence Gap](https://arxiv.org/abs/2203.07378)** and **[Learning Arousal-Valence Representation from Categorical Emotion Labels of Speech](https://arxiv.org/abs/2311.14816)** |
+| Negation inside embedding queries | Rejected | Bi-encoders and vision-language models often fail to preserve negated meaning | **[NevIR: Negation in Neural Information Retrieval](https://arxiv.org/abs/2305.07614)** and **[Vision-Language Models Do Not Understand Negation](https://arxiv.org/abs/2501.09425)** |
+| Verbal VLM confidence | Rejected | A model's stated confidence is not reliably aligned with correctness | **[Object-Level Verbalized Confidence Calibration in Vision-Language Models via Semantic Perturbation](https://arxiv.org/abs/2504.14848)** |
+| Run self-consistency for every verification | Rejected | Sampling three judgments triples verifier calls without adding independent evidence | **[Self-Consistency Improves Chain of Thought Reasoning in Language Models](https://arxiv.org/abs/2203.11171)** |
+| Read a license plate from one sampled frame | Rejected | Blur, angle, and occlusion make one-frame OCR fragile; reliable video ALPR combines sightings | **[Character Time-series Matching for Robust License Plate Recognition](https://arxiv.org/abs/2307.11336)** |
 
-These decisions keep the system small enough for the corpus while preserving clear
-upgrade paths through the extractor and search interfaces.
+These are approaches the system should not adopt as designed. Promising ideas that
+were deferred because of data, scale, or cost appear in Section 7.
 
 ## 6. Evaluation
 
@@ -263,6 +258,20 @@ recall. Extra incorrect results after the first hit are not currently penalized.
 
 The current priority is better evaluation coverage, especially true precision and
 recall, prosody queries, visual-only queries, negation, and temporal anchors.
+
+### Deferred architecture upgrades
+
+These ideas are worth testing when the project reaches the condition that justifies
+their added complexity:
+
+| Upgrade | Add it when | Research basis |
+|---|---|---|
+| Supervised temporal grounding | A reviewed bodycam training set is large enough to fine-tune and evaluate without leakage | **[UniVTG: Towards Unified Video-Language Temporal Grounding](https://arxiv.org/abs/2307.16715)** |
+| Video-native embedding index | A visual-only benchmark shows a measurable gain over caption and frame retrieval | **[MAD: A Scalable Dataset for Language Grounding in Videos from Movie Audio Descriptions](https://arxiv.org/abs/2112.00431)** and **[SnAG: Scalable and Accurate Video Grounding](https://arxiv.org/abs/2404.02257)** |
+| Agentic multi-hop search | Compositional queries fail the fixed pipeline often enough to justify repeated model calls | **[Deep Video Discovery: Agentic Search with Tool Use for Long-form Video Understanding](https://arxiv.org/abs/2505.18079)** |
+| ANN vector database | Corpus size, online updates, or metadata filtering make NumPy search a measured bottleneck | Operational scale trigger |
+| Fully local captioning | Privacy requirements or repeated ingestion make local compute cheaper than API captioning | Operational deployment trigger |
+| Multi-frame license plate extraction | Plate search becomes a product requirement and can be evaluated on repeated sightings | **[Character Time-series Matching for Robust License Plate Recognition](https://arxiv.org/abs/2307.11336)** |
 
 ### More reliable transcription
 

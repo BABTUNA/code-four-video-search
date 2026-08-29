@@ -37,6 +37,9 @@ times.
 Requires **Apple Silicon**, `ffmpeg`, [`uv`](https://docs.astral.sh/uv/), and an
 OpenRouter key. The local stack uses MLX, CoreML, and Apple Vision.
 
+The video corpus is not in this repository. Place the challenge's `.mp4` files in
+`c4-videos/` at the repo root.
+
 ```bash
 uv sync
 echo 'OPENROUTER_API_KEY=sk-or-...' > .env
@@ -44,11 +47,14 @@ echo 'OPENROUTER_API_KEY=sk-or-...' > .env
 # Index videos. Completed stages are cached.
 uv run c4 ingest c4-videos/video_1.mp4 c4-videos/video_2.mp4
 
-# Search
-uv run c4 search "find all interactions where an officer reads Miranda rights"
+# Search (the recommended configuration from the evaluation)
+uv run c4 search "find all interactions where an officer reads Miranda rights" -c configs/recommended.yaml
 
-# Evaluate against the labeled query set
-uv run c4 eval
+# Open a video player at a result's timestamp
+uv run c4 play 1
+
+# Evaluate against the labeled query set; any configs/*.yaml swaps the setup
+uv run c4 eval -c configs/recommended.yaml
 
 # Pre-executed walkthrough with inline video playback
 uv run jupyter lab demo.ipynb

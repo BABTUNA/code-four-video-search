@@ -210,6 +210,14 @@ The evaluation uses the 20 shortest videos:
 * Ingest: about 12 minutes of local compute and $0.13 of captioning per video hour,
   $0.90 of captioning for the full corpus
 
+Running the same extraction through hosted APIs instead of local models would cost
+roughly $5 to $6 per video hour by public list prices - about 40 times more -
+dominated by per-frame object detection and OCR calls, with hosted transcription and
+diarization adding a few dollars across the corpus. It would also make ingest
+throughput depend on provider rate limits instead of one machine. Local-first
+extraction is why the only recurring API costs are one caption call per five-minute
+chunk and verification on a handful of finalists per query.
+
 The complete query list is in the [evaluation query reference](docs/evaluation-queries.md).
 
 Labels were proposed by scanning transcripts and captions, then checked against frames

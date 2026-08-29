@@ -55,10 +55,10 @@ uv run jupyter lab demo.ipynb
 ```
 
 Ingest takes about 12 minutes of local compute and $0.10 to $0.35 of captioning per
-video hour. A live query takes about 13 to 14 seconds end to end with API
+video hour. **A live query takes about 13 to 14 seconds end to end with API
 verification (about 2 seconds without it) and costs one to two cents; the first query
 in a fresh process adds roughly 20 to 40 seconds of one-time model loading, which is
-why `demo.ipynb` ships pre-executed - its footer lines show each query's measured
+why `demo.ipynb` ships pre-executed** - its footer lines show each query's measured
 time and cost, and any cell can be re-run live. A slower local Qwen2.5-VL verifier
 is also available through configuration.
 

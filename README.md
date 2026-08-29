@@ -153,7 +153,9 @@ Defer benchmark-winning complexity until it proves value on labeled bodycam quer
 
 ## 5. Architecture
 
-The full operational specification is in [docs/pipeline.md](docs/pipeline.md).
+The full operational specification is in [docs/pipeline.md](docs/pipeline.md). A
+[short end-to-end example](docs/end-to-end-example.md) follows one query from
+extracted modalities through planning, fusion, and verification.
 
 ![Code Four system architecture](docs/figures/system-architecture.drawio.png)
 

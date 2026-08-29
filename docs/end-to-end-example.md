@@ -18,9 +18,15 @@ Every modality uses the same timestamped fields. Model-specific details stay in
    "text": "raised voice, elevated vocal arousal", "extra": {"peak_arousal": 0.703}},
   {"video_id": "video_16", "t_start": 180.0, "t_end": 240.0, "modality": "caption",
    "text": "The driver is instructed to exit the vehicle and is handcuffed.",
-   "extra": {"tags": ["handcuffing", "detention"]}}
+   "extra": {"tags": ["handcuffing", "detention"]}},
+  {"video_id": "video_16", "t_start": 191.0, "t_end": 194.0, "modality": "motion",
+   "text": "high camera motion, running or struggle", "extra": {"mean_energy": 0.1068}}
 ]
 ```
+
+These records cover the diagram's five groups: speech, captions, visual, audio, and
+domain signals. The stored `modality` values are more specific. A query only uses
+records relevant to what it asks.
 
 ## 2. Plan the query
 

@@ -37,6 +37,7 @@ def chat_json(
             "name": schema_name, "strict": True, "schema": schema}},
         "usage": {"include": True},
         "temperature": 0,  # planning and verification should be repeatable
+        "seed": 7,         # pin provider-side sampling where supported
     }
     headers = {"Authorization": f"Bearer {api_key()}"}
 

@@ -201,6 +201,29 @@ reranks the best documents, and temporal merging joins evidence on the shared
 timeline. The verifier then judges the original user query from frames and transcript
 evidence.
 
+### 5.3 Design tradeoffs
+
+Every major choice traded something away, deliberately:
+
+* **Precision over recall.** Verification refuses uncertain answers: all six
+  no-answer traps rejected, at the cost of two false abstentions on hard queries.
+  For evidence review, a confident empty answer beats a confident wrong one.
+* **Local-first extraction over hosted APIs.** About 40 times cheaper and free of
+  provider rate limits, at the cost of ~12 minutes of local compute per video hour
+  and an Apple Silicon dependency.
+* **API captioning over a local VLM captioner.** Roughly 3x faster ingest for
+  $0.13 per video hour; the local captioner remains one config line away.
+* **Per-modality time spans over a fixed segment grid.** We built the fixed grid
+  first and rejected it: uniform bins made every answer 30 seconds wide. Natural
+  spans keep a two-second quote two seconds long, at the cost of a query-time
+  temporal merge.
+* **A ranked, evidence-bearing shortlist over a single answer.** Strict top-1
+  localization on long video is unsolved even with supervision, so the interface
+  is candidates a reviewer can check, not an oracle.
+* **API verification over the local Qwen2.5-VL tier.** Seconds instead of minutes
+  per query for about a cent; the $0 local tier is a config flip when spend
+  matters more than latency.
+
 ## 6. Evaluation
 
 The evaluation uses the 20 shortest videos:

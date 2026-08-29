@@ -12,3 +12,4 @@ download-part-*.sh
 
 *.pt
 weights/
+demo_clips/

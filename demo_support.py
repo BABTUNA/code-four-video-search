@@ -67,13 +67,28 @@ def search(query: str, top: int = 5, show: int = 2) -> None:
     display(HTML("".join(parts)))
 
 
-def clip(rank: int = 1, before: float = 3.0) -> None:
-    """Embed the video for a result from the last search, cued to its span."""
+def clip(rank: int = 1, before: float = 3.0, after: float = 2.0) -> None:
+    """Embed the exact subclip for a result from the last search.
+
+    JupyterLab rewrites media-fragment URLs, so instead of seeking inside the
+    full video we cut the span itself (stream copy, no re-encode) into
+    demo_clips/ and embed that file.
+    """
+    import subprocess
+
     candidate = _last_results[rank - 1]
     start = max(0.0, candidate.t_start - before)
-    source = f"c4-videos/{candidate.video_id}.mp4#t={start:.0f},{candidate.t_end:.0f}"
+    length = candidate.t_end + after - start
+    out = Path("demo_clips") / (
+        f"{candidate.video_id}_{int(candidate.t_start)}_{int(candidate.t_end)}.mp4")
+    if not out.exists():
+        out.parent.mkdir(exist_ok=True)
+        subprocess.run(
+            ["ffmpeg", "-y", "-v", "error", "-ss", str(start), "-t", str(length),
+             "-i", f"c4-videos/{candidate.video_id}.mp4", "-c", "copy", str(out)],
+            check=True)
     display(HTML(
-        f"<video controls preload='metadata' width='640' src='{source}'></video>"
+        f"<video controls preload='metadata' width='640' src='{out}'></video>"
         f"<div style='font-size:12px;color:#57606a'>{candidate.video_id} &middot; "
         f"{hms(candidate.t_start)}&ndash;{hms(candidate.t_end)} "
-        f"(player cued {before:.0f}s early)</div>"))
+        f"(clip starts {before:.0f}s early)</div>"))

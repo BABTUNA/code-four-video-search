@@ -208,6 +208,8 @@ The evaluation uses the 20 shortest videos:
 * 18 answerable queries with 72 labeled spans
 * 6 no-answer traps containing real distractors
 
+The complete query list is in the [evaluation query reference](docs/evaluation-queries.md).
+
 Labels were proposed by scanning transcripts and captions, then checked against frames
 and transcript context. A result counts as a hit when temporal IoU is at least 0.3 or
 the prediction midpoint falls inside a labeled span. Each run stores timing and API

@@ -207,6 +207,8 @@ The evaluation uses the 20 shortest videos:
 * 24 queries
 * 18 answerable queries with 72 labeled spans
 * 6 no-answer traps containing real distractors
+* Ingest: about 12 minutes of local compute and $0.13 of captioning per video hour,
+  $0.90 of captioning for the full corpus
 
 The complete query list is in the [evaluation query reference](docs/evaluation-queries.md).
 

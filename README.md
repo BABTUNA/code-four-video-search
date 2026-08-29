@@ -133,20 +133,23 @@ confidence is often miscalibrated
 Conformal abstention is a future improvement that requires a separate calibration set
 (**[Mitigating LLM Hallucinations via Conformal Abstention](https://arxiv.org/abs/2405.01563)**).
 
-## 4. Rejected ideas: what's worth using vs. what's hype
+## 4. Research judgment: what's worth using vs. what's hype
 
-| Idea | Decision | Reason | Paper reference |
-|---|---|---|---|
-| Send the entire video to a long-context VLM | Rejected | Finding a few relevant moments remains weak, while question-guided selection works with far fewer frames | **[Re-thinking Temporal Search for Long-Form Video Understanding](https://arxiv.org/abs/2504.02259)** and **[VideoAgent: Long-form Video Understanding with Large Language Model as Agent](https://arxiv.org/abs/2403.10517)** |
-| Force every modality into fixed 30-second chunks | Rejected | One grid loses precise quotes and forces speech, scenes, and audio events onto the same scale | Internal segmentation test |
-| Assign categorical emotions such as angry or afraid | Rejected | Bodycam noise and speaker variation make these labels hard to defend; arousal is a narrower claim | **[Dawn of the Transformer Era in Speech Emotion Recognition: Closing the Valence Gap](https://arxiv.org/abs/2203.07378)** and **[Learning Arousal-Valence Representation from Categorical Emotion Labels of Speech](https://arxiv.org/abs/2311.14816)** |
-| Negation inside embedding queries | Rejected | Bi-encoders and vision-language models often fail to preserve negated meaning | **[NevIR: Negation in Neural Information Retrieval](https://arxiv.org/abs/2305.07614)** and **[Vision-Language Models Do Not Understand Negation](https://arxiv.org/abs/2501.09425)** |
-| Verbal VLM confidence | Rejected | A model's stated confidence is not reliably aligned with correctness | **[Object-Level Verbalized Confidence Calibration in Vision-Language Models via Semantic Perturbation](https://arxiv.org/abs/2504.14848)** |
-| Run self-consistency for every verification | Rejected | Sampling three judgments triples verifier calls without adding independent evidence | **[Self-Consistency Improves Chain of Thought Reasoning in Language Models](https://arxiv.org/abs/2203.11171)** |
-| Read a license plate from one sampled frame | Rejected | Blur, angle, and occlusion make one-frame OCR fragile; reliable video ALPR combines sightings | **[Character Time-series Matching for Robust License Plate Recognition](https://arxiv.org/abs/2307.11336)** |
+Here, hype means that a method's published results do not yet justify its cost or
+assumptions for this bodycam corpus. It does not mean the research itself is poor.
 
-These are approaches the system should not adopt as designed. Promising ideas that
-were deferred because of data, scale, or cost appear in Section 7.
+| Research direction | Verdict | What the evidence says | Decision for this system | Paper reference |
+|---|---|---|---|---|
+| Retrieve evidence before reasoning | **Worth using** | Question-guided selection reduces the amount of video sent to a VLM, while newer scene benchmarks still find long-context forgetting | Adopted as retrieve, merge, then verify | **[Re-thinking Temporal Search for Long-Form Video Understanding](https://arxiv.org/abs/2504.02259)**, **[VideoAgent: Long-form Video Understanding with Large Language Model as Agent](https://arxiv.org/abs/2403.10517)**, and **[Seeing the Scene Matters: Revealing Forgetting in Video Understanding Models with a Scene-Aware Long-Video Benchmark](https://openaccess.thecvf.com/content/CVPR2026/html/Chen_Seeing_the_Scene_Matters_Revealing_Forgetting_in_Video_Understanding_Models_CVPR_2026_paper.html)** |
+| Convert ASR, OCR, objects, and captions into searchable text | **Worth using with limits** | Text makes multimodal evidence cheap to search, but cannot preserve every spatial or acoustic detail | Adopted alongside native frame and audio indexes | **[Video-RAG: Visually-aligned Retrieval-Augmented Long Video Comprehension](https://arxiv.org/abs/2411.13093)** |
+| Compress many frames into visual panels | **Worth testing** | A training-free panel layout improves long-video QA, but trades spatial detail for temporal coverage | Deferred until visual-only evaluation shows a need | **[Video Panels for Long Video Understanding](https://openaccess.thecvf.com/content/CVPR2026/html/Doorenbos_Video_Panels_for_Long_Video_Understanding_CVPR_2026_paper.html)** |
+| Train a specialized temporal-grounding model | **Strong research, wrong fit today** | Current models improve precise localization on labeled benchmarks, but require training data and domain validation | Deferred because no labeled bodycam training set exists | **[HieraMamba: Video Temporal Grounding via Hierarchical Anchor-Mamba Pooling](https://openaccess.thecvf.com/content/CVPR2026/html/An_HieraMamba_Video_Temporal_Grounding_via_Hierarchical_Anchor-Mamba_Pooling_CVPR_2026_paper.html)** |
+| Use hierarchical multi-agent video search | **Promising, but overbuilt here** | Recent systems report strong benchmark results from hierarchical memory and repeated agent reasoning | Deferred until compositional-query failures justify the latency and complexity | **[Hierarchical Long Video Understanding with Audiovisual Entity Cohesion and Agentic Search](https://openaccess.thecvf.com/content/CVPR2026/html/Yin_Hierarchical_Long_Video_Understanding_with_Audiovisual_Entity_Cohesion_and_Agentic_CVPR_2026_paper.html)** and **[Symphony: A Cognitively-Inspired Multi-Agent System for Long-Video Understanding](https://openaccess.thecvf.com/content/CVPR2026/html/Yan_Symphony_A_Cognitively-Inspired_Multi-Agent_System_for_Long-Video_Understanding_CVPR_2026_paper.html)** |
+| Send the whole video to one long-context VLM | **Hype for this task** | More context does not guarantee reliable recall of brief scenes or precise timestamps | Rejected in favor of explicit evidence retrieval | **[Re-thinking Temporal Search for Long-Form Video Understanding](https://arxiv.org/abs/2504.02259)** and **[Seeing the Scene Matters: Revealing Forgetting in Video Understanding Models with a Scene-Aware Long-Video Benchmark](https://openaccess.thecvf.com/content/CVPR2026/html/Chen_Seeing_the_Scene_Matters_Revealing_Forgetting_in_Video_Understanding_Models_CVPR_2026_paper.html)** |
+| Treat a VLM's stated confidence as probability | **Hype** | Verbal confidence is not reliably calibrated to correctness | Rejected; use measured thresholds and discrete verification tiers | **[Object-Level Verbalized Confidence Calibration in Vision-Language Models via Semantic Perturbation](https://arxiv.org/abs/2504.14848)** |
+
+The pattern is simple: adopt ideas that expose evidence and measurable failure modes.
+Defer benchmark-winning complexity until it proves value on labeled bodycam queries.
 
 ## 5. Architecture
 
@@ -266,9 +269,10 @@ their added complexity:
 
 | Upgrade | Add it when | Research basis |
 |---|---|---|
-| Supervised temporal grounding | A reviewed bodycam training set is large enough to fine-tune and evaluate without leakage | **[UniVTG: Towards Unified Video-Language Temporal Grounding](https://arxiv.org/abs/2307.16715)** |
+| Supervised temporal grounding | A reviewed bodycam training set is large enough to fine-tune and evaluate without leakage | **[HieraMamba: Video Temporal Grounding via Hierarchical Anchor-Mamba Pooling](https://openaccess.thecvf.com/content/CVPR2026/html/An_HieraMamba_Video_Temporal_Grounding_via_Hierarchical_Anchor-Mamba_Pooling_CVPR_2026_paper.html)** |
 | Video-native embedding index | A visual-only benchmark shows a measurable gain over caption and frame retrieval | **[MAD: A Scalable Dataset for Language Grounding in Videos from Movie Audio Descriptions](https://arxiv.org/abs/2112.00431)** and **[SnAG: Scalable and Accurate Video Grounding](https://arxiv.org/abs/2404.02257)** |
-| Agentic multi-hop search | Compositional queries fail the fixed pipeline often enough to justify repeated model calls | **[Deep Video Discovery: Agentic Search with Tool Use for Long-form Video Understanding](https://arxiv.org/abs/2505.18079)** |
+| Visual panel compression | Dense frames become necessary and panels outperform the current sparse sampling on visual-only queries | **[Video Panels for Long Video Understanding](https://openaccess.thecvf.com/content/CVPR2026/html/Doorenbos_Video_Panels_for_Long_Video_Understanding_CVPR_2026_paper.html)** |
+| Agentic multi-hop search | Compositional queries fail the fixed pipeline often enough to justify repeated model calls | **[Hierarchical Long Video Understanding with Audiovisual Entity Cohesion and Agentic Search](https://openaccess.thecvf.com/content/CVPR2026/html/Yin_Hierarchical_Long_Video_Understanding_with_Audiovisual_Entity_Cohesion_and_Agentic_CVPR_2026_paper.html)** |
 | ANN vector database | Corpus size, online updates, or metadata filtering make NumPy search a measured bottleneck | Operational scale trigger |
 | Fully local captioning | Privacy requirements or repeated ingestion make local compute cheaper than API captioning | Operational deployment trigger |
 | Multi-frame license plate extraction | Plate search becomes a product requirement and can be evaluated on repeated sightings | **[Character Time-series Matching for Robust License Plate Recognition](https://arxiv.org/abs/2307.11336)** |
